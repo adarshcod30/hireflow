@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+cdk.out/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+.claude/
+.claude.json
+CLAUDE.local.md
+.aws-sam/

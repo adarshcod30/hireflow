@@ -4,10 +4,26 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { useAuth } from '../auth';
 import { ThemeToggle } from '../theme';
 
+/** A rounded mark with a flowing line, then the name in two tones: Hire in ink, Flow in the brand gradient. */
 export function Brand() {
   return (
     <Link to="/" className="brand" aria-label="HireFlow home">
-      HireFlow<i>.</i>
+      <svg className="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <defs>
+          <linearGradient id="brand-fill" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#6d5dfc" />
+            <stop offset="0.55" stopColor="#c04df0" />
+            <stop offset="1" stopColor="#ff8a5c" />
+          </linearGradient>
+        </defs>
+        <rect width="32" height="32" rx="10" fill="url(#brand-fill)" />
+        <path d="M7.5 20.5c3.2 0 3.2-9 6.5-9s3.2 9 6.5 9c1.7 0 3-1.6 4-4" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
+        <circle cx="25" cy="12.5" r="2.4" fill="#fff" />
+      </svg>
+      <span className="brand-name">
+        Hire<b>Flow</b>
+        <i>.</i>
+      </span>
     </Link>
   );
 }

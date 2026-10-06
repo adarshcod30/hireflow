@@ -9,6 +9,18 @@ export interface ProbeDeps {
   timeoutMs: number;
 }
 
+/**
+ * Node's fetch reports every network problem as "fetch failed" and keeps the real reason (a DNS miss,
+ * a reset connection, a certificate problem) in `error.cause`. An alert that only says "fetch failed"
+ * sends someone guessing, so the reason is pulled out and logged next to it.
+ */
+function describe(error: unknown): { error: string; reason?: string } {
+  if (!(error instanceof Error)) return { error: String(error) };
+  const cause = (error as Error & { cause?: { code?: string; message?: string } }).cause;
+  const reason = cause?.code ?? cause?.message ?? (error.name !== 'Error' ? error.name : undefined);
+  return reason ? { error: error.message, reason } : { error: error.message };
+}
+
 export interface ProbeResult {
   healthy: boolean;
   status: number | null;
@@ -35,7 +47,7 @@ export function createProbeHandler(deps: ProbeDeps) {
       status = response.status;
       healthy = response.ok;
     } catch (error) {
-      deps.log('warn', 'probe request failed', { error: error instanceof Error ? error.message : String(error) });
+      deps.log('warn', 'probe request failed', describe(error));
     }
 
     const latencyMs = deps.now() - started;

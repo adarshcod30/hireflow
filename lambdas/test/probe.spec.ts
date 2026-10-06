@@ -50,6 +50,33 @@ describe('probe handler', () => {
     expect(t.log).toHaveBeenCalledWith('warn', 'probe request failed', { error: 'getaddrinfo ENOTFOUND' });
   });
 
+  it('logs why a request failed, not just that it did', async () => {
+    const dnsMiss = Object.assign(new Error('fetch failed'), {
+      cause: { code: 'ENOTFOUND', message: 'getaddrinfo ENOTFOUND api.example.com' },
+    });
+    const t = setup(jest.fn().mockRejectedValue(dnsMiss));
+    await t.handler();
+    expect(t.log).toHaveBeenCalledWith('warn', 'probe request failed', { error: 'fetch failed', reason: 'ENOTFOUND' });
+  });
+
+  it('falls back to the cause message, then to the error name, such as a timeout', async () => {
+    const noCode = Object.assign(new Error('fetch failed'), { cause: { message: 'socket hang up' } });
+    const a = setup(jest.fn().mockRejectedValue(noCode));
+    await a.handler();
+    expect(a.log).toHaveBeenCalledWith('warn', 'probe request failed', {
+      error: 'fetch failed',
+      reason: 'socket hang up',
+    });
+
+    const timeout = Object.assign(new Error('The operation was aborted due to timeout'), { name: 'TimeoutError' });
+    const b = setup(jest.fn().mockRejectedValue(timeout));
+    await b.handler();
+    expect(b.log).toHaveBeenCalledWith('warn', 'probe request failed', {
+      error: 'The operation was aborted due to timeout',
+      reason: 'TimeoutError',
+    });
+  });
+
   it('reports a thrown non-Error value as text', async () => {
     const fetchImpl = jest.fn().mockRejectedValue('boom');
     const t = setup(fetchImpl);

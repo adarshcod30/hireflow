@@ -52,6 +52,34 @@ gh variable set AWS_ROLE_ARN --body "arn:aws:iam::ACCOUNT_ID:role/hireflow-githu
 aws ce update-cost-allocation-tags-status --cost-allocation-tags-status TagKey=Project,Status=Active --region us-east-1
 ```
 
+## Checking a deployment
+
+Two scripts, from different angles. Both exit non-zero on any failure.
+
+```bash
+# From the outside, as a stranger sees it. No AWS credentials. Runs automatically after every deploy.
+API_URL=https://api.example.com WEB_URL=https://dxxxx.cloudfront.net scripts/smoke.sh
+
+# The whole candidate-to-email journey on real AWS: apply, upload, Bedrock screening, status change,
+# SES email, re-apply, a bad file. Needs AWS credentials. Removes its own test data.
+scripts/e2e-live.sh
+```
+
+`smoke.sh` checks TLS, security headers, CORS (the web origin is allowed, another is not), what anonymous callers
+can and cannot reach, a clean 404 and 400, the CSP, caching headers, a private resume bucket, and that SSH and
+the app port are closed. `e2e-live.sh` also proves S3 refuses an oversize file, a wrong content type and a
+wrong key, and that a file which only claims to be a PDF ends as `failed` rather than retrying forever.
+
+## Demo data
+
+```bash
+scripts/seed-remote.sh            # 4 recruiters, 13 jobs, 130 applications, each with a resume
+scripts/seed-remote.sh --reset    # remove the demo data and add it fresh
+```
+
+The resumes are uploaded to S3, so the real pipeline scores them in the background (about 35 a minute at the
+peak, Bedrock and Lambda concurrency permitting). Nothing is emailed. Everything uses `example.com` addresses.
+
 ## Deploying a change
 
 Push to `main`. CI runs the four test suites and ShellCheck, and on success the deploy workflow
@@ -62,7 +90,8 @@ scripts/deploy-api.sh && scripts/deploy-web.sh
 ```
 
 `activate.sh` on the instance switches releases only after migrations succeed, and switches back if
-`/health/ready` does not answer within 80 seconds. Migrations only go forward, so a release that drops
+`/health/ready` does not answer within 80 seconds. The restart itself leaves a gap of a few seconds, during which
+the API answers `502` and the workers retry (see decision 14). Migrations only go forward, so a release that drops
 or renames a column should be split in two: first stop using it, then remove it in a later release.
 
 ## Rolling back

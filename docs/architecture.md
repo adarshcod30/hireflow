@@ -197,5 +197,6 @@ cannot drift apart without a test failing.
 | SES fails after a claim was taken | The Lambda releases the claim, so the retry can send |
 | Two recruiters change the same application at once | One wins. The other gets `409` with the current version |
 | Two relay loops read the outbox at once | `SKIP LOCKED` gives each a different batch, so nothing is sent twice by the relay |
+| A deploy restarts the API | For a few seconds Caddy answers `502`. Any worker call in that window fails, its message goes back to the queue and is retried after the visibility timeout. Observed live: 8 screenings hit a restart, all 8 completed on retry, none reached the DLQ |
 | A deploy ships a broken release | `activate.sh` sees `/health/ready` fail, relinks the previous release and exits non-zero |
 | The instance host is impaired | A CloudWatch alarm asks EC2 to recover it, and emails the alert address |

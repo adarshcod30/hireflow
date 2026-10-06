@@ -26,6 +26,9 @@ env:
   WEB_BUCKET: ${{ vars.WEB_BUCKET }}
   DISTRIBUTION_ID: ${{ vars.DISTRIBUTION_ID }}
   API_URL: ${{ vars.API_URL }}
+  WEB_URL: ${{ vars.WEB_URL }}
+  RESUME_BUCKET_URL: ${{ vars.RESUME_BUCKET_URL }}
+  SERVER_IP: ${{ vars.SERVER_IP }}
 
 jobs:
   deploy:
@@ -48,6 +51,8 @@ jobs:
         run: scripts/deploy-api.sh
       - name: Publish the web app
         run: scripts/deploy-web.sh
-      - name: Check the live API
+      - name: Smoke test the live deployment
+        # A restart takes the API down for a few seconds, so give it time to come back before judging it
         run: |
-          curl --fail --silent --show-error --retry 5 --retry-delay 5 --retry-all-errors "$API_URL/health/ready"
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors "$API_URL/health/ready" > /dev/null
+          scripts/smoke.sh

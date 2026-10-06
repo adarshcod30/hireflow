@@ -131,3 +131,20 @@ The stack is written in the same language as the app and has 38 assertion tests:
 private database, IMDSv2, a dead-letter queue on every worker queue, one-model Bedrock access, one
 repository and one branch in the OIDC trust, and an allowlist for every wildcard IAM resource. A
 mutation check (adding a NAT gateway and opening port 22) makes three of them fail.
+
+## 14. A restart is the price of one instance
+
+Releasing means restarting the one API process, so every deploy has a gap of a few seconds when requests
+get a `502` from Caddy. I saw it live: a push during a screening run made eight worker calls fail in the same
+second. They were all retried through SQS and finished, which is exactly what the queue is for, but a person
+loading the dashboard in that moment would see an error. A second instance behind a load balancer, drained one
+at a time, would remove the gap. For a demo the cheaper answer is to accept it, keep every worker call
+retryable, and run the smoke test after each deploy so a release that does not come back is caught at once.
+
+## 15. The uptime probe starts before DNS exists, and that is on purpose
+
+The probe is created with the stack, a few minutes before anyone can point a DNS name at the new server. For
+that first stretch it reports the API as down, which is true. The one thing worth knowing: resolvers cache a
+"no such name" answer for the zone's negative TTL (an hour here), so for up to an hour after the record appears
+some probe runs still fail. It cost me an alarm and a confusing afternoon. The probe now logs the underlying
+reason (`ENOTFOUND`, `ECONNRESET`, a timeout), so the next person can tell DNS from an app fault in one look.

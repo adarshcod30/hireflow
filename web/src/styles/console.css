@@ -872,15 +872,23 @@
   border-right: 1px solid var(--border);
 }
 .login-art h2 {
-  font-size: clamp(2rem, 3.4vw, 3rem);
-  font-weight: 400;
-  letter-spacing: -0.035em;
-  max-width: 460px;
+  font-size: clamp(2.1rem, 3.6vw, 3.3rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
 }
-.login-art p {
-  margin-top: 14px;
-  max-width: 420px;
-  color: var(--muted);
+.login-art h2 span {
+  display: block;
+}
+.login-art h3 {
+  margin-top: 20px;
+  max-width: 460px;
+  text-wrap: balance;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  color: color-mix(in srgb, var(--text) 62%, transparent);
 }
 .login-form {
   display: grid;

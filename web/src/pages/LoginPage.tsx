@@ -35,8 +35,11 @@ export function LoginPage() {
       <section className="login-art" aria-hidden="true">
         <Brand />
         <div>
-          <h2>Let the machine read first. You make the call.</h2>
-          <p>Every resume is scored in seconds, every move is yours to make, and every candidate hears back exactly once.</p>
+          <h2>
+            <span>Let the machine read first.</span>
+            <span>You make the call.</span>
+          </h2>
+          <h3>Every resume is scored in seconds, every move is yours to make, and every candidate hears back exactly once.</h3>
         </div>
         <span className="muted small">
           <ShieldCheck size={14} style={{ display: 'inline', verticalAlign: '-2px' }} /> Signed requests, least-privilege access

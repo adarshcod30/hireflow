@@ -2,18 +2,22 @@
 # Ships the API to the instance: package, upload to S3, activate through SSM Run Command.
 # No SSH, no open ports. Needs AWS credentials, or the repository variables CI sets.
 #
-#   scripts/deploy-api.sh [--seed] [--skip-build]
+#   scripts/deploy-api.sh [--seed] [--mock] [--skip-build]
+#
+#   --seed   three sample jobs
+#   --mock   the full demo platform: recruiters, a dozen jobs, ~130 applications with resumes
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=scripts/_stack.sh
 source "$ROOT/scripts/_stack.sh"
 
-SEED=""
+FLAGS=""
 BUILD=true
 for arg in "$@"; do
   case "$arg" in
-    --seed) SEED="--seed" ;;
+    --seed) FLAGS="$FLAGS --seed" ;;
+    --mock) FLAGS="$FLAGS --mock" ;;
     --skip-build) BUILD=false ;;
     *) echo "unknown option $arg" >&2; exit 2 ;;
   esac
@@ -33,7 +37,7 @@ mkdir -p /opt/hireflow/releases/$ID
 aws s3 cp s3://$ARTIFACTS_BUCKET/releases/$ID.tar.gz /tmp/$ID.tar.gz --only-show-errors
 tar -xzf /tmp/$ID.tar.gz -C /opt/hireflow/releases/$ID
 rm -f /tmp/$ID.tar.gz
-bash /opt/hireflow/releases/$ID/deploy/activate.sh $ID $SEED"
+bash /opt/hireflow/releases/$ID/deploy/activate.sh $ID$FLAGS"
 
 COMMAND_ID="$(aws ssm send-command \
   --instance-ids "$INSTANCE_ID" \

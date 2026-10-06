@@ -1,37 +1,74 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useState, type ReactNode } from 'react';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth';
-import { Layout } from './components/Layout';
-import { ApplicationPage } from './pages/ApplicationPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { JobApplicationsPage } from './pages/JobApplicationsPage';
-import { JobPage } from './pages/JobPage';
-import { JobsPage } from './pages/JobsPage';
+import { Loading } from './components/ui';
+import { ConsoleLayout } from './layouts/ConsoleLayout';
+import { PublicLayout } from './layouts/PublicLayout';
+import { ApplicationPage } from './pages/console/ApplicationPage';
+import { CandidatesPage } from './pages/console/CandidatesPage';
+import { JobBoardPage } from './pages/console/JobBoardPage';
+import { JobsPage } from './pages/console/JobsPage';
+import { OverviewPage } from './pages/console/OverviewPage';
+import { TeamPage } from './pages/console/TeamPage';
 import { LoginPage } from './pages/LoginPage';
-import { UsersPage } from './pages/UsersPage';
+import { JobPage } from './pages/public/JobPage';
+import { OpportunitiesPage } from './pages/public/OpportunitiesPage';
 
 export function RequireAuth({ children, role }: { children: ReactNode; role?: 'admin' }) {
   const { user, loading } = useAuth();
   const location = useLocation();
-  if (loading) return <p className="muted">Loading...</p>;
+  if (loading) {
+    return (
+      <div className="theme-dark" style={{ padding: 40 }}>
+        <Loading label="Signing you in" />
+      </div>
+    );
+  }
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  if (role && user.role !== role) return <p className="error">You do not have access to this page.</p>;
+  if (role && user.role !== role) return <p className="notice notice-error">You do not have access to this page.</p>;
   return children;
+}
+
+function NotFound() {
+  return (
+    <div className="pub-hero">
+      <h1>Page not found</h1>
+      <p>That page does not exist, or the role has been filled.</p>
+    </div>
+  );
 }
 
 export function AppRoutes() {
   return (
     <Routes>
-      <Route element={<Layout />}>
-        <Route index element={<JobsPage />} />
+      <Route element={<PublicLayout />}>
+        <Route index element={<OpportunitiesPage />} />
         <Route path="jobs/:id" element={<JobPage />} />
-        <Route path="login" element={<LoginPage />} />
-        <Route path="recruiter" element={<RequireAuth><DashboardPage /></RequireAuth>} />
-        <Route path="recruiter/jobs/:id" element={<RequireAuth><JobApplicationsPage /></RequireAuth>} />
-        <Route path="recruiter/applications/:id" element={<RequireAuth><ApplicationPage /></RequireAuth>} />
-        <Route path="recruiter/users" element={<RequireAuth role="admin"><UsersPage /></RequireAuth>} />
-        <Route path="*" element={<p className="empty">Page not found.</p>} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
+      <Route path="login" element={<LoginPage />} />
+      <Route
+        path="recruiter"
+        element={
+          <RequireAuth>
+            <ConsoleLayout />
+          </RequireAuth>
+        }
+      >
+        <Route index element={<OverviewPage />} />
+        <Route path="jobs" element={<JobsPage />} />
+        <Route path="jobs/:id" element={<JobBoardPage />} />
+        <Route path="candidates" element={<CandidatesPage />} />
+        <Route path="applications/:id" element={<ApplicationPage />} />
+        <Route
+          path="team"
+          element={
+            <RequireAuth role="admin">
+              <TeamPage />
+            </RequireAuth>
+          }
+        />
       </Route>
     </Routes>
   );

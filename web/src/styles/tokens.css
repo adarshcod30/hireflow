@@ -1,0 +1,74 @@
+/* Design tokens. One set of names, two themes: light for candidates, dark for the recruiter console. */
+:root {
+  --font: 'Outfit Variable', 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.theme-light {
+  color-scheme: light;
+  --bg: #eeedf6;
+  --surface: #ffffff;
+  --surface-2: #f5f4fa;
+  --surface-3: #ebeaf3;
+  --border: rgba(16, 16, 40, 0.09);
+  --border-strong: rgba(16, 16, 40, 0.18);
+  --text: #0c0c14;
+  --muted: #62627a;
+  --faint: #8f8fa3;
+  --primary: #0c0c14;
+  --primary-text: #ffffff;
+  --accent: #5448d6;
+  --accent-soft: rgba(84, 72, 214, 0.1);
+  --ok: #15803d;
+  --ok-soft: rgba(21, 128, 61, 0.1);
+  --warn: #b45309;
+  --warn-soft: rgba(180, 83, 9, 0.11);
+  --danger: #c62828;
+  --danger-soft: rgba(198, 40, 40, 0.09);
+  --shadow: 0 1px 2px rgba(16, 16, 40, 0.05), 0 8px 24px rgba(16, 16, 40, 0.06);
+  --shadow-lg: 0 2px 6px rgba(16, 16, 40, 0.06), 0 22px 48px rgba(16, 16, 40, 0.12);
+  --s-applied: #5b6178;
+  --s-screening: #2563eb;
+  --s-interview: #7c3aed;
+  --s-offer: #b45309;
+  --s-hired: #15803d;
+  --s-rejected: #c62828;
+  --s-withdrawn: #7a7a8c;
+}
+
+.theme-dark {
+  color-scheme: dark;
+  --bg: #08080c;
+  --surface: #101016;
+  --surface-2: #16161e;
+  --surface-3: #1d1d27;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #f3f3f8;
+  --muted: #9a9aae;
+  --faint: #6c6c80;
+  --primary: #f3f3f8;
+  --primary-text: #0b0b10;
+  --accent: #8e8cff;
+  --accent-soft: rgba(142, 140, 255, 0.14);
+  --ok: #4ade80;
+  --ok-soft: rgba(74, 222, 128, 0.12);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.12);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.12);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --s-applied: #9aa1ba;
+  --s-screening: #60a5fa;
+  --s-interview: #a78bfa;
+  --s-offer: #fbbf24;
+  --s-hired: #4ade80;
+  --s-rejected: #f87171;
+  --s-withdrawn: #8b8b9c;
+}

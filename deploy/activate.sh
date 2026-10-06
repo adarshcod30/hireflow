@@ -2,7 +2,10 @@
 # Activates one release on the API instance. Run as root by SSM Run Command, after the
 # release bundle has been unpacked to /opt/hireflow/releases/<release-id>:
 #
-#   bash activate.sh <release-id> [--seed]
+#   bash activate.sh <release-id> [--seed] [--mock]
+#
+# Flags: --seed adds three sample jobs, --mock adds the full demo platform (about 130 applications, with
+# resumes uploaded so the real screening pipeline scores them).
 #
 # In order: write the environment file from SSM and Secrets Manager, run database
 # migrations, create the admin account if it is missing, switch the `current` symlink,
@@ -13,9 +16,16 @@
 # ship it in two steps, so the previous release still works against the new schema.
 set -euo pipefail
 
-RELEASE_ID="${1:?usage: activate.sh <release-id> [--seed]}"
+RELEASE_ID="${1:?usage: activate.sh <release-id> [--seed] [--mock]}"
 SEED=false
-[[ "${2:-}" == "--seed" ]] && SEED=true
+MOCK=false
+for flag in "${@:2}"; do
+  case "$flag" in
+    --seed) SEED=true ;;
+    --mock) MOCK=true ;;
+    *) echo "unknown option $flag"; exit 2 ;;
+  esac
+done
 
 BASE=/opt/hireflow
 RELEASE="$BASE/releases/$RELEASE_ID"
@@ -89,6 +99,11 @@ as_app env ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PASSWORD="$ADMIN_PASSWORD" /usr/loca
 if [[ "$SEED" == true ]]; then
   echo "seeding demo jobs"
   as_app /usr/local/bin/node dist/scripts/seed-demo.js
+fi
+
+if [[ "$MOCK" == true ]]; then
+  echo "seeding the demo platform"
+  as_app /usr/local/bin/node dist/scripts/seed-mock.js
 fi
 
 # Switch atomically: build the new link beside the old one, then rename over it

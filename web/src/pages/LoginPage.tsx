@@ -1,7 +1,9 @@
+import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth';
-import { ErrorNote } from '../components/badges';
+import { ErrorNote } from '../components/ui';
+import { Brand } from '../layouts/PublicLayout';
 
 export function LoginPage() {
   const { user, login } = useAuth();
@@ -29,26 +31,51 @@ export function LoginPage() {
   };
 
   return (
-    <form className="panel narrow" onSubmit={(e) => void submit(e)}>
-      <h1>Recruiter sign in</h1>
-      <label>
-        Email
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="username" />
-      </label>
-      <label>
-        Password
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          autoComplete="current-password"
-        />
-      </label>
-      <ErrorNote error={error} />
-      <button type="submit" disabled={busy}>
-        {busy ? 'Signing in...' : 'Sign in'}
-      </button>
-    </form>
+    <div className="theme-dark login">
+      <section className="login-art" aria-hidden="true">
+        <Brand />
+        <div>
+          <h2>Every application, from first click to signed offer.</h2>
+          <p>Resumes are screened in seconds, candidates hear back exactly once, and nothing slips through the cracks.</p>
+        </div>
+        <span className="muted small">
+          <ShieldCheck size={14} style={{ display: 'inline', verticalAlign: '-2px' }} /> Signed requests, least-privilege access
+        </span>
+      </section>
+      <section className="login-form">
+        <form onSubmit={(e) => void submit(e)}>
+          <div>
+            <h1>Recruiter sign in</h1>
+            <p className="muted">Use the account your administrator created for you.</p>
+          </div>
+          <label className="field">
+            <span>Email</span>
+            <input
+              className="input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="username"
+            />
+          </label>
+          <label className="field">
+            <span>Password</span>
+            <input
+              className="input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+            />
+          </label>
+          <ErrorNote error={error} />
+          <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
+            {busy ? 'Signing in...' : 'Sign in'} <ArrowRight size={16} aria-hidden="true" />
+          </button>
+        </form>
+      </section>
+    </div>
   );
 }

@@ -62,8 +62,70 @@ export const job = (over: Record<string, unknown> = {}) => ({
   description: 'Build and run reliable services.',
   requiredSkills: ['postgresql', 'aws'],
   status: 'open',
+  employmentType: 'full_time',
+  workMode: 'remote',
+  salaryMin: 90000,
+  salaryMax: 130000,
+  salaryCurrency: 'USD',
+  salaryPeriod: 'year',
   createdAt: '2030-01-01T00:00:00.000Z',
   updatedAt: '2030-01-01T00:00:00.000Z',
+  ...over,
+});
+
+export const ME = { id: 'u1', email: 'r@x.co', fullName: 'Rina Recruiter', role: 'recruiter' };
+export const ADMIN = { id: 'u0', email: 'a@x.co', fullName: 'Ada Admin', role: 'admin' };
+
+export const row = (over: Record<string, unknown> = {}) => ({
+  id: 'app-1',
+  status: 'applied',
+  version: 1,
+  screeningStatus: 'done',
+  fitScore: 82,
+  hasResume: true,
+  candidateName: 'Asha Rao',
+  candidateEmail: 'asha@example.com',
+  jobId: 'job-1',
+  jobTitle: 'Platform Engineer',
+  createdAt: '2030-01-01T00:00:00.000Z',
+  updatedAt: '2030-01-01T00:00:00.000Z',
+  ...over,
+});
+
+export const detail = (over: Record<string, unknown> = {}) => ({
+  ...row(),
+  screeningSummary: 'Strong SQL and AWS background.',
+  extractedSkills: ['sql', 'aws'],
+  screenedAt: '2030-01-01T00:00:00.000Z',
+  allowedNext: ['screening', 'interview', 'rejected', 'withdrawn'],
+  history: [{ id: '1', from: null, to: 'applied', note: 'Applied', by: null, at: '2030-01-01T00:00:00.000Z' }],
+  ...over,
+});
+
+export const zeroStatuses = { applied: 0, screening: 0, interview: 0, offer: 0, hired: 0, rejected: 0, withdrawn: 0 };
+
+export const overview = (over: Record<string, unknown> = {}) => ({
+  totals: {
+    openJobs: 4,
+    jobs: 6,
+    applications: 40,
+    last7Days: 12,
+    previous7Days: 8,
+    screened: 30,
+    screeningInFlight: 2,
+    avgFitScore: 61,
+    stale: 5,
+  },
+  byStatus: { ...zeroStatuses, applied: 20, screening: 10, interview: 6, offer: 2, hired: 1, rejected: 1 },
+  daily: Array.from({ length: 14 }, (_, i) => ({ date: `2030-01-${String(i + 1).padStart(2, '0')}`, count: i % 4 })),
+  scoreDistribution: [
+    { label: '0-19', count: 1 },
+    { label: '20-39', count: 5 },
+    { label: '40-59', count: 8 },
+    { label: '60-79', count: 10 },
+    { label: '80-100', count: 6 },
+  ],
+  topJobs: [{ id: 'job-1', title: 'Platform Engineer', status: 'open', applications: 18, avgFitScore: 66 }],
   ...over,
 });
 

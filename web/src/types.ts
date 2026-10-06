@@ -2,6 +2,20 @@ export type ApplicationStatus = 'applied' | 'screening' | 'interview' | 'offer' 
 export type ScreeningStatus = 'pending' | 'processing' | 'done' | 'failed';
 export type JobStatus = 'draft' | 'open' | 'paused' | 'closed';
 export type Role = 'admin' | 'recruiter';
+export type EmploymentType = 'full_time' | 'part_time' | 'contract' | 'internship';
+export type WorkMode = 'remote' | 'hybrid' | 'onsite';
+export type SalaryPeriod = 'hour' | 'month' | 'year';
+
+/** The same rules the API enforces. The server has the last word, this only decides which buttons to offer. */
+export const TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
+  applied: ['screening', 'interview', 'rejected', 'withdrawn'],
+  screening: ['interview', 'rejected', 'withdrawn'],
+  interview: ['offer', 'rejected', 'withdrawn'],
+  offer: ['hired', 'rejected', 'withdrawn'],
+  hired: [],
+  rejected: [],
+  withdrawn: [],
+};
 
 export const APPLICATION_STATUSES: ApplicationStatus[] = [
   'applied',
@@ -26,6 +40,12 @@ export interface Job {
   description: string;
   requiredSkills: string[];
   status: JobStatus;
+  employmentType: EmploymentType;
+  workMode: WorkMode;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryCurrency: string;
+  salaryPeriod: SalaryPeriod;
   createdAt: string;
   updatedAt: string;
 }
@@ -54,6 +74,9 @@ export interface ApplicationRow {
   candidateEmail: string;
   createdAt: string;
   updatedAt: string;
+  /** Present on the cross-job candidates list. */
+  jobId?: string;
+  jobTitle?: string;
 }
 
 export interface HistoryEntry {
@@ -97,4 +120,22 @@ export interface PipelineJob {
   total: number;
   byStatus: Record<ApplicationStatus, number>;
   avgFitScore: number | null;
+}
+
+export interface Overview {
+  totals: {
+    openJobs: number;
+    jobs: number;
+    applications: number;
+    last7Days: number;
+    previous7Days: number;
+    screened: number;
+    screeningInFlight: number;
+    avgFitScore: number | null;
+    stale: number;
+  };
+  byStatus: Record<ApplicationStatus, number>;
+  daily: { date: string; count: number }[];
+  scoreDistribution: { label: string; count: number }[];
+  topJobs: { id: string; title: string; status: JobStatus; applications: number; avgFitScore: number | null }[];
 }

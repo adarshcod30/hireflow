@@ -14,7 +14,8 @@ export default defineConfig({
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/main.tsx', 'src/test/**', 'src/types.ts', 'src/**/*.test.{ts,tsx}'],
       reporter: ['text-summary', 'text', 'lcov'],
-      thresholds: { statements: 80, branches: 70, functions: 75, lines: 80 },
+      // Measured at 97.9 / 95.6 / 97.1 / 98.7. The gate sits just below, so a drop fails the build.
+      thresholds: { statements: 95, branches: 92, functions: 95, lines: 96 },
     },
   },
 });

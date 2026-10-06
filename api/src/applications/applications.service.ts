@@ -163,6 +163,57 @@ export class ApplicationsService {
     return page;
   }
 
+  /**
+   * Every application across all jobs, newest first, with optional filters. Same keyset
+   * cursor as the per-job list. The name and email filter is a substring match with the
+   * LIKE wildcards escaped, so a search for "50%" finds "50%" and not everything.
+   */
+  async listAll(options: {
+    status?: ApplicationStatus;
+    jobId?: string;
+    q?: string;
+    minScore?: number;
+    cursor?: string;
+    limit?: number;
+  }): Promise<Page<ApplicationRow & { jobId: string; jobTitle: string }>> {
+    const limit = options.limit ?? DEFAULT_LIMIT;
+    const cursor = decodeCursor(options.cursor);
+    const params: unknown[] = [];
+    const where: string[] = [];
+    const add = (sql: (n: number) => string, ...values: unknown[]) => {
+      params.push(...values);
+      where.push(sql(params.length));
+    };
+
+    if (options.status) add((n) => `a.status = $${n}`, options.status);
+    if (options.jobId) add((n) => `a.job_id = $${n}`, options.jobId);
+    if (options.minScore !== undefined) add((n) => `a.fit_score >= $${n}`, options.minScore);
+    if (options.q) {
+      const like = `%${options.q.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`;
+      add((n) => `(c.full_name ILIKE $${n} OR c.email::text ILIKE $${n})`, like);
+    }
+    if (cursor) {
+      add((n) => `(a.created_at, a.id) < ($${n - 1}::timestamptz, $${n}::uuid)`, cursor.createdAt, cursor.id);
+    }
+    params.push(limit + 1);
+
+    const rows = await this.db.query<Record<string, unknown>[]>(
+      `SELECT a.id, a.status, a.version, a.screening_status, a.fit_score, a.resume_key IS NOT NULL AS has_resume,
+              a.created_at, a.updated_at, c.full_name, c.email, j.id AS job_id, j.title AS job_title
+       FROM applications a
+       JOIN candidates c ON c.id = a.candidate_id
+       JOIN jobs j ON j.id = a.job_id
+       ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+       ORDER BY a.created_at DESC, a.id DESC
+       LIMIT $${params.length}`,
+      params,
+    );
+    return toPage(
+      rows.map((r) => ({ ...this.toRow(r), jobId: r.job_id as string, jobTitle: r.job_title as string })),
+      limit,
+    );
+  }
+
   async get(id: string) {
     const [row] = await this.db.query<Record<string, unknown>[]>(
       `SELECT a.*, a.resume_key IS NOT NULL AS has_resume, c.full_name, c.email, j.title AS job_title, j.id AS job_id_ref

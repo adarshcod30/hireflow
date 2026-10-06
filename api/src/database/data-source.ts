@@ -1,8 +1,9 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { ENTITIES } from './entities';
 import { InitialSchema1790000000000 } from './migrations/1790000000000-InitialSchema';
+import { JobDetails1790000000001 } from './migrations/1790000000001-JobDetails';
 
-export const MIGRATIONS = [InitialSchema1790000000000];
+export const MIGRATIONS = [InitialSchema1790000000000, JobDetails1790000000001];
 
 export function buildDataSourceOptions(url: string, ssl: boolean): DataSourceOptions {
   return {

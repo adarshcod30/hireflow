@@ -180,6 +180,18 @@ describe('migrations', () => {
     const ds = new DataSource(buildDataSourceOptions(process.env.DATABASE_URL as string, false));
     await ds.initialize();
     try {
+      // Newest first: the job details migration must leave the earlier schema intact
+      await ds.undoLastMigration({ transaction: 'each' });
+      const columns = await ds.query<{ column_name: string }[]>(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = 'jobs' AND column_name LIKE 'salary%'`,
+      );
+      expect(columns).toEqual([]);
+      const detailTypes = await ds.query(
+        `SELECT typname FROM pg_type WHERE typname IN ('employment_type', 'work_mode')`,
+      );
+      expect(detailTypes).toEqual([]);
+      expect(await ds.query(`SELECT 1 FROM jobs LIMIT 0`)).toEqual([]);
+
       await ds.undoLastMigration({ transaction: 'each' });
       const tables = await ds.query<{ tablename: string }[]>(
         `SELECT tablename FROM pg_tables WHERE schemaname = 'public'`,

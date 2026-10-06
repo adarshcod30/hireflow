@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DEFAULT_LIMIT, decodeCursor, Page, toPage } from '../common/pagination';
-import { JobEntity, JobStatus } from '../database/entities';
+import { EmploymentType, JobEntity, JobStatus, SalaryPeriod, WorkMode } from '../database/entities';
 import { CreateJobDto, UpdateJobDto } from './jobs.dto';
 
 export interface JobView {
@@ -13,6 +13,12 @@ export interface JobView {
   description: string;
   requiredSkills: string[];
   status: JobStatus;
+  employmentType: EmploymentType;
+  workMode: WorkMode;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryCurrency: string;
+  salaryPeriod: SalaryPeriod;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +31,12 @@ const toView = (j: JobEntity): JobView => ({
   description: j.description,
   requiredSkills: j.requiredSkills,
   status: j.status,
+  employmentType: j.employmentType,
+  workMode: j.workMode,
+  salaryMin: j.salaryMin,
+  salaryMax: j.salaryMax,
+  salaryCurrency: j.salaryCurrency,
+  salaryPeriod: j.salaryPeriod,
   createdAt: j.createdAt,
   updatedAt: j.updatedAt,
 });
@@ -48,8 +60,15 @@ export class JobsService {
       description: dto.description,
       requiredSkills: dto.requiredSkills ?? [],
       status: dto.status ?? 'draft',
+      employmentType: dto.employmentType ?? 'full_time',
+      workMode: dto.workMode ?? 'remote',
+      salaryMin: dto.salaryMin ?? null,
+      salaryMax: dto.salaryMax ?? null,
+      salaryCurrency: dto.salaryCurrency ?? 'USD',
+      salaryPeriod: dto.salaryPeriod ?? 'year',
       createdBy: userId,
     });
+    this.assertSalaryRange(job.salaryMin, job.salaryMax);
     return toView(await this.jobs.save(job));
   }
 
@@ -60,7 +79,15 @@ export class JobsService {
     for (const [key, value] of Object.entries(dto)) {
       if (value !== undefined) (job as unknown as Record<string, unknown>)[key] = value;
     }
+    this.assertSalaryRange(job.salaryMin, job.salaryMax);
     return toView(await this.jobs.save(job));
+  }
+
+  /** The database also enforces this, but a clear message beats a constraint name. */
+  private assertSalaryRange(min: number | null, max: number | null): void {
+    if (min !== null && max !== null && max < min) {
+      throw new BadRequestException('salaryMax must be at least salaryMin');
+    }
   }
 
   /** Recruiters see every status. */

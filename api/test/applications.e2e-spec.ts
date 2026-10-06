@@ -163,6 +163,85 @@ describe('applications', () => {
       });
     });
 
+    describe('across all jobs', () => {
+      async function seed() {
+        const { recruiter, jobId } = await setup();
+        const otherJob = await createJob(t, recruiter.id, { status: 'open', title: 'Designer' });
+        await apply(t, jobId, 'asha@example.com', 'Asha Rao');
+        await apply(t, jobId, 'ben@example.com', 'Ben Carter');
+        await apply(t, otherJob, 'chloe@example.com', 'Chloe 50%');
+        await apply(t, otherJob, 'dev@example.com', 'Dev Patel');
+        await t.db.query(`UPDATE applications SET fit_score = 90, screening_status = 'done' WHERE id IN (
+          SELECT a.id FROM applications a JOIN candidates c ON c.id = a.candidate_id WHERE c.email = 'asha@example.com')`);
+        await t.db.query(`UPDATE applications SET fit_score = 40, status = 'interview' WHERE id IN (
+          SELECT a.id FROM applications a JOIN candidates c ON c.id = a.candidate_id WHERE c.email = 'ben@example.com')`);
+        return { recruiter, jobId, otherJob };
+      }
+      const list = (token: string, params: Record<string, string | number> = {}) =>
+        http().get('/v1/applications').query(params).set(bearer(token));
+
+      it('lists applications from every job with the job title attached', async () => {
+        const { recruiter, jobId } = await seed();
+        const res = await list(recruiter.token);
+        expect(res.status).toBe(200);
+        expect(res.body.items).toHaveLength(4);
+        const asha = res.body.items.find((a: { candidateEmail: string }) => a.candidateEmail === 'asha@example.com');
+        expect(asha).toMatchObject({ jobId, jobTitle: 'Platform Engineer', fitScore: 90, candidateName: 'Asha Rao' });
+      });
+
+      it('filters by job, by status and by a minimum score', async () => {
+        const { recruiter, otherJob } = await seed();
+        expect((await list(recruiter.token, { jobId: otherJob })).body.items).toHaveLength(2);
+        expect((await list(recruiter.token, { status: 'interview' })).body.items).toHaveLength(1);
+        const strong = await list(recruiter.token, { minScore: 80 });
+        expect(strong.body.items.map((a: { candidateEmail: string }) => a.candidateEmail)).toEqual([
+          'asha@example.com',
+        ]);
+      });
+
+      it('searches names and emails by substring, ignoring case', async () => {
+        const { recruiter } = await seed();
+        const byName = await list(recruiter.token, { q: 'CARTER' });
+        expect(byName.body.items.map((a: { candidateName: string }) => a.candidateName)).toEqual(['Ben Carter']);
+        const byEmail = await list(recruiter.token, { q: 'dev@' });
+        expect(byEmail.body.items).toHaveLength(1);
+      });
+
+      it('treats LIKE wildcards in the search as plain text', async () => {
+        const { recruiter } = await seed();
+        // "%" alone would match everything if it were passed through as a wildcard
+        expect((await list(recruiter.token, { q: '%' })).body.items).toHaveLength(1);
+        expect((await list(recruiter.token, { q: '50%' })).body.items[0].candidateName).toBe('Chloe 50%');
+        expect((await list(recruiter.token, { q: '_' })).body.items).toHaveLength(0);
+      });
+
+      it('pages through everything exactly once with a cursor, combined with a filter', async () => {
+        const { recruiter, jobId } = await setup();
+        for (let i = 0; i < 9; i += 1) await apply(t, jobId, `p${i}@example.com`, `Pager ${i}`);
+        const seen: string[] = [];
+        let cursor: string | null = null;
+        do {
+          const res: request.Response = await list(recruiter.token, {
+            limit: 4,
+            q: 'pager',
+            ...(cursor ? { cursor } : {}),
+          });
+          seen.push(...res.body.items.map((a: { id: string }) => a.id));
+          cursor = res.body.nextCursor;
+        } while (cursor);
+        expect(seen).toHaveLength(9);
+        expect(new Set(seen).size).toBe(9);
+      });
+
+      it('rejects bad filters with 400 and anonymous callers with 401', async () => {
+        const { recruiter } = await seed();
+        expect((await list(recruiter.token, { minScore: 101 })).status).toBe(400);
+        expect((await list(recruiter.token, { jobId: 'not-a-uuid' })).status).toBe(400);
+        expect((await list(recruiter.token, { status: 'frozen' })).status).toBe(400);
+        expect((await http().get('/v1/applications')).status).toBe(401);
+      });
+    });
+
     it('shows one application with its history and the moves allowed next', async () => {
       const { recruiter, jobId } = await setup();
       const created = await apply(t, jobId);
@@ -348,6 +427,77 @@ describe('applications', () => {
         hired: 0,
       });
       expect(job.avgFitScore).toBe(70);
+    });
+
+    describe('overview', () => {
+      it('summarises the whole pipeline for the dashboard', async () => {
+        const { recruiter, jobId } = await setup();
+        for (let i = 0; i < 5; i += 1) await apply(t, jobId, `o${i}@example.com`, `Overview ${i}`);
+        await t.db.query(`UPDATE applications SET status = 'interview', fit_score = 82, screening_status = 'done'
+          WHERE id IN (SELECT id FROM applications ORDER BY id LIMIT 2)`);
+        await t.db.query(`UPDATE applications SET fit_score = 15, screening_status = 'done'
+          WHERE id IN (SELECT id FROM applications WHERE fit_score IS NULL ORDER BY id LIMIT 1)`);
+        await t.db
+          .query(`UPDATE applications SET created_at = now() - interval '10 days', updated_at = now() - interval '9 days'
+          WHERE id IN (SELECT id FROM applications WHERE fit_score IS NULL ORDER BY id LIMIT 1)`);
+
+        const res = await http().get('/v1/stats/overview').set(bearer(recruiter.token));
+        expect(res.status).toBe(200);
+        expect(res.body.totals).toMatchObject({
+          openJobs: 1,
+          jobs: 1,
+          applications: 5,
+          last7Days: 4,
+          previous7Days: 1,
+          screened: 3,
+          avgFitScore: 60,
+          stale: 1,
+        });
+        expect(res.body.byStatus).toMatchObject({ applied: 3, interview: 2, hired: 0 });
+        expect(res.body.topJobs[0]).toMatchObject({ id: jobId, applications: 5, avgFitScore: 60 });
+      });
+
+      it('returns a fourteen day series with a zero for every quiet day', async () => {
+        const { recruiter, jobId } = await setup();
+        await apply(t, jobId, 'today@example.com');
+        const res = await http().get('/v1/stats/overview').set(bearer(recruiter.token));
+        expect(res.body.daily).toHaveLength(14);
+        expect(res.body.daily[13].count).toBe(1);
+        expect(res.body.daily.slice(0, 13).every((d: { count: number }) => d.count === 0)).toBe(true);
+        const dates = res.body.daily.map((d: { date: string }) => d.date);
+        expect(dates).toEqual([...dates].sort());
+      });
+
+      it('buckets scores in fives, with the top bucket including 100', async () => {
+        const { recruiter, jobId } = await setup();
+        for (const [i, score] of [0, 19, 20, 99, 100].entries()) {
+          await apply(t, jobId, `s${i}@example.com`);
+          await t.db.query(
+            `UPDATE applications SET fit_score = $1, screening_status = 'done' WHERE id = (SELECT id FROM applications WHERE fit_score IS NULL LIMIT 1)`,
+            [score],
+          );
+        }
+        const res = await http().get('/v1/stats/overview').set(bearer(recruiter.token));
+        expect(res.body.scoreDistribution).toEqual([
+          { label: '0-19', count: 2 },
+          { label: '20-39', count: 1 },
+          { label: '40-59', count: 0 },
+          { label: '60-79', count: 0 },
+          { label: '80-100', count: 2 },
+        ]);
+      });
+
+      it('answers an empty system with zeros instead of nulls or errors', async () => {
+        const user = await createUser(t, 'recruiter');
+        const res = await http().get('/v1/stats/overview').set(bearer(user.token));
+        expect(res.status).toBe(200);
+        expect(res.body.totals).toMatchObject({ applications: 0, screened: 0, avgFitScore: null, stale: 0 });
+        expect(res.body.topJobs).toEqual([]);
+      });
+
+      it('is closed to anonymous callers', async () => {
+        expect((await http().get('/v1/stats/overview')).status).toBe(401);
+      });
     });
 
     it('includes jobs that have no applications yet', async () => {

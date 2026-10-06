@@ -2,6 +2,9 @@ import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, Update
 
 export type UserRole = 'admin' | 'recruiter';
 export type JobStatus = 'draft' | 'open' | 'paused' | 'closed';
+export type EmploymentType = 'full_time' | 'part_time' | 'contract' | 'internship';
+export type WorkMode = 'remote' | 'hybrid' | 'onsite';
+export type SalaryPeriod = 'hour' | 'month' | 'year';
 export type ApplicationStatus = 'applied' | 'screening' | 'interview' | 'offer' | 'hired' | 'rejected' | 'withdrawn';
 export type ScreeningStatus = 'pending' | 'processing' | 'done' | 'failed';
 
@@ -49,6 +52,26 @@ export class JobEntity {
     default: 'draft',
   })
   status!: JobStatus;
+  @Column({
+    name: 'employment_type',
+    type: 'enum',
+    enum: ['full_time', 'part_time', 'contract', 'internship'],
+    enumName: 'employment_type',
+    default: 'full_time',
+  })
+  employmentType!: EmploymentType;
+  @Column({
+    name: 'work_mode',
+    type: 'enum',
+    enum: ['remote', 'hybrid', 'onsite'],
+    enumName: 'work_mode',
+    default: 'remote',
+  })
+  workMode!: WorkMode;
+  @Column({ name: 'salary_min', type: 'int', nullable: true }) salaryMin!: number | null;
+  @Column({ name: 'salary_max', type: 'int', nullable: true }) salaryMax!: number | null;
+  @Column({ name: 'salary_currency', type: 'char', length: 3, default: 'USD' }) salaryCurrency!: string;
+  @Column({ name: 'salary_period', type: 'text', default: 'year' }) salaryPeriod!: SalaryPeriod;
   @Column({ name: 'created_by', type: 'uuid' }) createdBy!: string;
   @CreateDateColumn({ name: 'created_at', ...TS }) createdAt!: Date;
   @UpdateDateColumn({ name: 'updated_at', ...TS }) updatedAt!: Date;

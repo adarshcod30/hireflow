@@ -38,6 +38,86 @@ describe('jobs', () => {
       expect((await http().post('/v1/jobs').send(validJob())).status).toBe(401);
     });
 
+    it('defaults the contract details, so a client that sends none still works', async () => {
+      const user = await createUser(t, 'recruiter');
+      const res = await http().post('/v1/jobs').set(bearer(user.token)).send(validJob());
+      expect(res.body).toMatchObject({
+        employmentType: 'full_time',
+        workMode: 'remote',
+        salaryMin: null,
+        salaryMax: null,
+        salaryCurrency: 'USD',
+        salaryPeriod: 'year',
+      });
+    });
+
+    it('stores compensation and work details, and shows them on the public board once the job is open', async () => {
+      const user = await createUser(t, 'recruiter');
+      const created = await http()
+        .post('/v1/jobs')
+        .set(bearer(user.token))
+        .send(
+          validJob({
+            status: 'open',
+            employmentType: 'contract',
+            workMode: 'hybrid',
+            salaryMin: 40,
+            salaryMax: 90,
+            salaryCurrency: 'EUR',
+            salaryPeriod: 'hour',
+          }),
+        );
+      expect(created.status).toBe(201);
+
+      const publicJob = await http().get(`/v1/public/jobs/${created.body.id}`);
+      expect(publicJob.body).toMatchObject({
+        employmentType: 'contract',
+        workMode: 'hybrid',
+        salaryMin: 40,
+        salaryMax: 90,
+        salaryCurrency: 'EUR',
+        salaryPeriod: 'hour',
+      });
+    });
+
+    it('updates one detail without disturbing the others', async () => {
+      const user = await createUser(t, 'recruiter');
+      const created = await http()
+        .post('/v1/jobs')
+        .set(bearer(user.token))
+        .send(validJob({ workMode: 'onsite', salaryMin: 100, salaryMax: 150 }));
+      const updated = await http()
+        .patch(`/v1/jobs/${created.body.id}`)
+        .set(bearer(user.token))
+        .send({ salaryMax: 180 });
+      expect(updated.status).toBe(200);
+      expect(updated.body).toMatchObject({ workMode: 'onsite', salaryMin: 100, salaryMax: 180 });
+    });
+
+    it.each([
+      ['a maximum below the minimum', { salaryMin: 100, salaryMax: 50 }],
+      ['an unknown employment type', { employmentType: 'volunteer' }],
+      ['an unknown work mode', { workMode: 'underwater' }],
+      ['a negative salary', { salaryMin: -1 }],
+      ['a currency that is not a three letter code', { salaryCurrency: 'dollars' }],
+      ['a fractional salary', { salaryMin: 10.5 }],
+    ])('rejects %s with 400', async (_label, over) => {
+      const user = await createUser(t, 'recruiter');
+      const res = await http().post('/v1/jobs').set(bearer(user.token)).send(validJob(over));
+      expect(res.status).toBe(400);
+    });
+
+    it('refuses an update that would leave the maximum below the stored minimum', async () => {
+      const user = await createUser(t, 'recruiter');
+      const created = await http()
+        .post('/v1/jobs')
+        .set(bearer(user.token))
+        .send(validJob({ salaryMin: 100, salaryMax: 150 }));
+      const res = await http().patch(`/v1/jobs/${created.body.id}`).set(bearer(user.token)).send({ salaryMax: 20 });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/salaryMax/);
+    });
+
     it.each([
       ['a short title', { title: 'ab' }],
       ['a short description', { description: 'too short' }],

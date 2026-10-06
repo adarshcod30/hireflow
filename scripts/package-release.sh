@@ -32,6 +32,7 @@ if [[ -n "$NATIVE" ]]; then
 fi
 
 printf '{"id":"%s","builtAt":"%s"}\n' "$ID" "$(date -u +%FT%TZ)" >"$STAGE/RELEASE.json"
-tar -czf "$BUNDLE" -C "$STAGE" .
+# --no-xattrs keeps macOS extended attributes out of the archive, so extraction on Linux is quiet
+tar --no-xattrs -czf "$BUNDLE" -C "$STAGE" .
 echo "built $BUNDLE ($(du -h "$BUNDLE" | cut -f1))"
 echo "$ID" >"$ROOT/out/RELEASE_ID"

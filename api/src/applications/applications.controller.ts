@@ -16,7 +16,7 @@ import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { Auth, AuthUser, CurrentUser } from '../common/auth';
 import { rateLimit } from '../common/rate-limit';
-import { ApplicationListQuery, ApplyDto, TransitionDto } from './applications.dto';
+import { AllApplicationsQuery, ApplicationListQuery, ApplyDto, TransitionDto } from './applications.dto';
 import { ApplicationsService } from './applications.service';
 
 @ApiTags('public')
@@ -57,6 +57,11 @@ export class PublicApplicationsController {
 @Auth('admin', 'recruiter')
 export class ApplicationsController {
   constructor(private readonly applications: ApplicationsService) {}
+
+  @Get('applications')
+  listAll(@Query() query: AllApplicationsQuery) {
+    return this.applications.listAll(query);
+  }
 
   @Get('jobs/:jobId/applications')
   list(@Param('jobId', ParseUUIDPipe) jobId: string, @Query() query: ApplicationListQuery) {

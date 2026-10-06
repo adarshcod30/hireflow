@@ -2,6 +2,7 @@ import { ExternalLink, LayoutDashboard, LogOut, Briefcase, UsersRound, UserCog }
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { Avatar } from '../components/ui';
+import { ThemeToggle } from '../theme';
 import { Brand } from './PublicLayout';
 
 /** The recruiter console shell: a dark sidebar and a wide working area. */
@@ -11,7 +12,7 @@ export function ConsoleLayout() {
   if (!user) return null;
 
   return (
-    <div className="theme-dark shell">
+    <div className="themed shell">
       <a className="skip-link" href="#main">
         Skip to content
       </a>
@@ -46,18 +47,23 @@ export function ConsoleLayout() {
               <span className="muted small">{user.role === 'admin' ? 'Admin' : 'Recruiter'}</span>
             </div>
           </div>
-          <button
-            className="btn btn-ghost btn-sm"
-            // Leave first, and let the public page finish the sign-out when it arrives. Ending the
-            // session while this page is still on screen would send the route guard to the login page.
-            onClick={() => navigate('/', { state: { signOut: true } })}
-          >
-            <LogOut size={16} aria-hidden="true" /> Sign out
-          </button>
+          <div className="side-actions">
+            <ThemeToggle />
+            <button
+              className="btn btn-ghost btn-sm"
+              // Leave first, and let the public page finish the sign-out when it arrives. Ending the
+              // session while this page is still on screen would send the route guard to the login page.
+              onClick={() => navigate('/', { state: { signOut: true } })}
+            >
+              <LogOut size={16} aria-hidden="true" /> Sign out
+            </button>
+          </div>
         </div>
       </aside>
       <main id="main" className="main">
-        <Outlet />
+        <div className="main-inner">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

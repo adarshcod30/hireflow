@@ -31,7 +31,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="theme-dark login">
+    <div className="themed login" data-theme="dark">
       <section className="login-art" aria-hidden="true">
         <Brand />
         <div>

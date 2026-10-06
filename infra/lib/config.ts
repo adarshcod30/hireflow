@@ -4,8 +4,14 @@ import type { Node } from 'constructs';
 export interface HireflowConfig {
   /** Public hostname of the API. Caddy on the instance gets a certificate for it. */
   apiDomain: string;
-  /** SES sender address. SES sends a verification email to it when the stack is created. */
+  /**
+   * SES sender address. It has to be on a domain you control: the stack verifies the whole domain
+   * with DKIM, and the DNS records to publish are in the stack outputs. A mailbox on a free provider
+   * such as gmail.com cannot be signed, and Gmail files mail sent that way under Spam.
+   */
   senderEmail: string;
+  /** The address of the first administrator. Kept apart from the sender so changing one cannot touch the other. */
+  adminEmail: string;
   /** Gets alarms and the daily digest. While SES is in the sandbox it also receives every candidate email. */
   alertEmail: string;
   /** owner/name of the GitHub repository allowed to deploy through OIDC. */
@@ -26,7 +32,8 @@ export interface HireflowConfig {
 
 export const DEFAULT_CONFIG: HireflowConfig = {
   apiDomain: 'api.adarshdwivedi.site',
-  senderEmail: 'adarshdwivedi256@gmail.com',
+  senderEmail: 'no-reply@adarshdwivedi.site',
+  adminEmail: 'adarshdwivedi256@gmail.com',
   alertEmail: 'adarshdeveloper24@gmail.com',
   githubRepo: 'adarshcod30/hireflow',
   githubSubject: 'repo:adarshcod30@201125240/hireflow@1406556665',
@@ -44,6 +51,7 @@ export function readConfig(node: Node): HireflowConfig {
   return {
     apiDomain: pick('apiDomain'),
     senderEmail: pick('senderEmail'),
+    adminEmail: pick('adminEmail'),
     alertEmail: pick('alertEmail'),
     githubRepo: pick('githubRepo'),
     githubSubject: pick('githubSubject'),

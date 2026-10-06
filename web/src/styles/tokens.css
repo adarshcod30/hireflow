@@ -1,4 +1,8 @@
-/* Design tokens. One set of names, two themes: light for candidates, dark for the recruiter console. */
+/*
+ * Design tokens. One set of names, two themes. The theme is an attribute on the <html> element,
+ * so everything on the page, portals and dialogs included, reads the same values. The sign-in
+ * page pins itself to the dark set so it looks identical whichever theme a person has chosen.
+ */
 :root {
   --font: 'Outfit Variable', 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
@@ -9,20 +13,24 @@
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.theme-light {
+[data-theme='light'] {
   color-scheme: light;
   --bg: #eeedf6;
   --surface: #ffffff;
   --surface-2: #f5f4fa;
   --surface-3: #ebeaf3;
+  --sidebar: #ffffff;
+  --glass: rgba(255, 255, 255, 0.68);
+  --glass-solid: #ffffff;
   --border: rgba(16, 16, 40, 0.09);
   --border-strong: rgba(16, 16, 40, 0.18);
   --text: #0c0c14;
   --muted: #62627a;
-  --faint: #8f8fa3;
+  --faint: #8a8a9f;
   --primary: #0c0c14;
   --primary-text: #ffffff;
   --accent: #5448d6;
+  --accent-2: #8b5cf6;
   --accent-soft: rgba(84, 72, 214, 0.1);
   --ok: #15803d;
   --ok-soft: rgba(21, 128, 61, 0.1);
@@ -30,6 +38,13 @@
   --warn-soft: rgba(180, 83, 9, 0.11);
   --danger: #c62828;
   --danger-soft: rgba(198, 40, 40, 0.09);
+  --chip-bg: #eceaf5;
+  --chip-text: #4b4b63;
+  --overlay: rgba(20, 20, 40, 0.38);
+  --hero-1: rgba(247, 168, 214, 0.55);
+  --hero-2: rgba(150, 186, 255, 0.6);
+  --hero-3: rgba(214, 190, 255, 0.55);
+  --glow-shadow: rgba(110, 90, 200, 0.16);
   --shadow: 0 1px 2px rgba(16, 16, 40, 0.05), 0 8px 24px rgba(16, 16, 40, 0.06);
   --shadow-lg: 0 2px 6px rgba(16, 16, 40, 0.06), 0 22px 48px rgba(16, 16, 40, 0.12);
   --s-applied: #5b6178;
@@ -41,20 +56,24 @@
   --s-withdrawn: #7a7a8c;
 }
 
-.theme-dark {
+[data-theme='dark'] {
   color-scheme: dark;
   --bg: #08080c;
   --surface: #101016;
   --surface-2: #16161e;
   --surface-3: #1d1d27;
+  --sidebar: #0b0b10;
+  --glass: rgba(255, 255, 255, 0.06);
+  --glass-solid: #1a1a24;
   --border: rgba(255, 255, 255, 0.07);
   --border-strong: rgba(255, 255, 255, 0.16);
   --text: #f3f3f8;
   --muted: #9a9aae;
-  --faint: #6c6c80;
+  --faint: #6f6f84;
   --primary: #f3f3f8;
   --primary-text: #0b0b10;
   --accent: #8e8cff;
+  --accent-2: #b794f6;
   --accent-soft: rgba(142, 140, 255, 0.14);
   --ok: #4ade80;
   --ok-soft: rgba(74, 222, 128, 0.12);
@@ -62,6 +81,14 @@
   --warn-soft: rgba(251, 191, 36, 0.12);
   --danger: #f87171;
   --danger-soft: rgba(248, 113, 113, 0.12);
+  --input-bg: #16161e;
+  --chip-bg: #1d1d27;
+  --chip-text: #a4a4b8;
+  --overlay: rgba(4, 4, 10, 0.62);
+  --hero-1: rgba(247, 168, 214, 0.2);
+  --hero-2: rgba(120, 150, 255, 0.26);
+  --hero-3: rgba(150, 110, 255, 0.26);
+  --glow-shadow: rgba(0, 0, 0, 0.5);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
   --s-applied: #9aa1ba;

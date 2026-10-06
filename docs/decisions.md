@@ -124,6 +124,7 @@ SES accounts start in a sandbox that only sends to verified addresses. Leaving i
 approval request, which is not worth it for a portfolio project. Instead the notifier has a redirect
 mode: every email goes to one verified inbox with the real recipient in the subject
 (`[to someone@example.com] ...`). The templates, the escaping and the claim logic all run exactly as in production.
+Where that mail comes from turned out to matter, see decision 16.
 
 ## 13. CDK in TypeScript, with tests
 
@@ -148,3 +149,28 @@ that first stretch it reports the API as down, which is true. The one thing wort
 "no such name" answer for the zone's negative TTL (an hour here), so for up to an hour after the record appears
 some probe runs still fail. It cost me an alarm and a confusing afternoon. The probe now logs the underlying
 reason (`ENOTFOUND`, `ECONNRESET`, a timeout), so the next person can tell DNS from an app fault in one look.
+
+## 16. Send from a domain you own, signed with DKIM
+
+The first version sent as a `gmail.com` address through SES, which looks fine in the SES console and still fails
+in practice. All nine messages the live system sent (eight application emails and one digest) arrived, and every
+one was filed under **Spam**, because Gmail sees a Gmail sender that Google did not sign. The fix is the standard one:
+verify `adarshdwivedi.site` in SES, publish the three DKIM CNAMEs, and send as `no-reply@adarshdwivedi.site`. The
+first message sent after the records verified landed in the inbox. It costs nothing. The stack prints the three records
+as outputs so nobody has to copy them out of the console, and the administrator's address became its own setting so
+that moving the sender could not rewrite the admin secret.
+
+## 17. An eight hour session, because there is no refresh flow
+
+Access tokens lasted 15 minutes and there is no refresh token, so a recruiter was signed out in the middle of
+reading a candidate. A refresh flow is the right fix and is on the roadmap, but it adds a token store, rotation and
+theft detection. Until then the lifetime is set to a working day (`JWT_EXPIRES_IN=8h`) from the stack, which is a
+conscious trade: a stolen token is valid for longer, and deactivating a user takes effect on their next request
+because the API checks the account on every call.
+
+## 18. One theme switch, set on the root element
+
+The console used to be dark and the public site light, hard-coded per layout, so a recruiter flipping between the
+two saw the page change colour. The theme is now one attribute on `<html>`, read by every token, so dialogs rendered
+outside the app shell get the same colours and one button flips the lot. The first visit follows the operating
+system. The sign-in page sets its own `data-theme="dark"`, which is how it stays identical in both modes.

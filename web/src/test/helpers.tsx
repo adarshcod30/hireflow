@@ -4,6 +4,7 @@ import type { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import { AuthProvider } from '../auth';
+import { ThemeProvider } from '../theme';
 
 export type Handler = (init: { body: unknown; headers: Record<string, string>; url: string }) => unknown;
 
@@ -47,9 +48,11 @@ export function renderWithProviders(ui: ReactElement, { route = '/' }: { route?:
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <AuthProvider>
-        <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>,
   );
 }

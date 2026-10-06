@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth';
+import { ThemeProvider } from './theme';
 import { Loading } from './components/ui';
 import { ConsoleLayout } from './layouts/ConsoleLayout';
 import { PublicLayout } from './layouts/PublicLayout';
@@ -20,7 +21,7 @@ export function RequireAuth({ children, role }: { children: ReactNode; role?: 'a
   const location = useLocation();
   if (loading) {
     return (
-      <div className="theme-dark" style={{ padding: 40 }}>
+      <div className="themed" style={{ padding: 40 }}>
         <Loading label="Signing you in" />
       </div>
     );
@@ -78,11 +79,13 @@ export default function App() {
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { staleTime: 15_000, retry: 1 } } }));
   return (
     <QueryClientProvider client={client}>
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

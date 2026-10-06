@@ -158,6 +158,22 @@ The account starts in the sandbox, so mail goes only to verified addresses. The 
 recipient in the subject. To send to real candidates, verify a sending domain, request production
 access in the SES console and clear that variable in `lib/constructs/workers.ts`.
 
+Mail is sent from `no-reply@adarshdwivedi.site`. The stack verifies the whole domain with DKIM, because Gmail
+files mail that claims a `gmail.com` sender but is signed by Amazon under Spam (this happened: the first nine
+messages all arrived in the Spam folder). After a deploy, publish the three CNAME records printed as stack
+outputs `DkimRecord1` to `DkimRecord3`, plus one TXT record at `_dmarc` with the value `v=DMARC1; p=none`:
+
+```bash
+aws cloudformation describe-stacks --stack-name HireflowStack \
+  --query "Stacks[0].Outputs[?starts_with(OutputKey,'DkimRecord')].OutputValue" --output text
+aws sesv2 get-email-identity --email-identity adarshdwivedi.site \
+  --query '[VerifiedForSendingStatus,DkimAttributes.Status]' --output text   # True SUCCESS when it works
+```
+
+If you use another domain, set `senderEmail` in `cdk.json` context or `lib/config.ts`. The sender has to be on a
+domain you control. The administrator's address is a separate setting (`adminEmail`) so changing one never
+touches the other.
+
 ## Cost
 
 Rates are the on-demand prices in the AWS Pricing API for Mumbai, read on 6 October 2026.

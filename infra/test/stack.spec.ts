@@ -236,7 +236,7 @@ describe('least privilege', () => {
     const ses = allStatements(template).filter((s) => s.Action.includes('ses:SendEmail'));
     expect(ses).toHaveLength(2);
     for (const s of ses) {
-      expect(s.Condition).toEqual({ StringEquals: { 'ses:FromAddress': 'adarshdwivedi256@gmail.com' } });
+      expect(s.Condition).toEqual({ StringEquals: { 'ses:FromAddress': 'no-reply@adarshdwivedi.site' } });
     }
   });
 
@@ -377,10 +377,26 @@ describe('alerting', () => {
     });
   });
 
-  it('verifies the sender and the alert address with SES, once each', () => {
+  it('sends from a verified domain with DKIM, and verifies the alert address as a sandbox recipient', () => {
     template.resourceCountIs('AWS::SES::EmailIdentity', 2);
-    const single = synth({ alertEmail: 'adarshdwivedi256@gmail.com' });
-    single.resourceCountIs('AWS::SES::EmailIdentity', 1);
+    template.hasResourceProperties('AWS::SES::EmailIdentity', {
+      EmailIdentity: 'adarshdwivedi.site',
+      DkimAttributes: { SigningEnabled: true },
+    });
+    template.hasResourceProperties('AWS::SES::EmailIdentity', { EmailIdentity: 'adarshdeveloper24@gmail.com' });
+  });
+
+  it('prints the three DKIM records to publish, so no one has to dig through the console', () => {
+    const outputs = Object.keys(template.toJSON().Outputs as object);
+    expect(outputs).toEqual(expect.arrayContaining(['DkimRecord1', 'DkimRecord2', 'DkimRecord3']));
+  });
+
+  it('keeps the first administrator on their own address, independent of the mail sender', () => {
+    const moved = synth({ senderEmail: 'hello@example.org' });
+    moved.hasResourceProperties('AWS::SecretsManager::Secret', {
+      GenerateSecretString: Match.objectLike({ SecretStringTemplate: JSON.stringify({ email: 'adarshdwivedi256@gmail.com' }) }),
+    });
+    moved.hasResourceProperties('AWS::SES::EmailIdentity', { EmailIdentity: 'example.org' });
   });
 });
 

@@ -12,9 +12,9 @@
   height: 620px;
   z-index: -1;
   background:
-    radial-gradient(620px 320px at 14% 0%, rgba(247, 168, 214, 0.55), transparent 70%),
-    radial-gradient(640px 340px at 88% -4%, rgba(150, 186, 255, 0.6), transparent 70%),
-    radial-gradient(560px 380px at 52% 6%, rgba(214, 190, 255, 0.55), transparent 72%);
+    radial-gradient(620px 320px at 14% 0%, var(--hero-1), transparent 70%),
+    radial-gradient(640px 340px at 88% -4%, var(--hero-2), transparent 70%),
+    radial-gradient(560px 380px at 52% 6%, var(--hero-3), transparent 72%);
   pointer-events: none;
 }
 .pub-header {
@@ -51,7 +51,7 @@
 .pub-nav a:hover,
 .pub-nav a[aria-current='page'] {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.65);
+  background: var(--glass);
 }
 .pub-actions {
   display: flex;
@@ -78,7 +78,7 @@
   gap: 8px;
   padding: 7px 16px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--glass);
   border: 1px solid var(--border);
   font-size: 0.85rem;
   color: var(--muted);
@@ -110,7 +110,7 @@
   background: linear-gradient(100deg, #f2a6e8, #8fb4ff, #ffb4a2, #c7a6ff, #f2a6e8);
   background-size: 300% 100%;
   animation: glow 12s linear infinite;
-  box-shadow: 0 18px 40px rgba(110, 90, 200, 0.16);
+  box-shadow: 0 18px 40px var(--glow-shadow);
 }
 @keyframes glow {
   to {
@@ -146,13 +146,13 @@
   padding: 7px 16px;
   border-radius: 999px;
   border: 1px solid var(--border-strong);
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--glass);
   color: var(--muted);
   font-size: 0.88rem;
   transition: all 0.15s;
 }
 .filter:hover {
-  background: #fff;
+  background: var(--glass-solid);
   color: var(--text);
 }
 .filter[aria-pressed='true'] {
@@ -339,7 +339,7 @@
   margin-bottom: 10px;
 }
 .prose {
-  color: #2d2d3e;
+  color: color-mix(in srgb, var(--text) 86%, transparent);
   line-height: 1.7;
   white-space: pre-line;
 }

@@ -12,6 +12,7 @@ describe('readConfig', () => {
     expect(config.apiDomain).toBe('api.example.org');
     expect(config.monthlyBudgetUsd).toBe(75);
     expect(config.senderEmail).toBe(DEFAULT_CONFIG.senderEmail);
+    expect(config.adminEmail).toBe(DEFAULT_CONFIG.adminEmail);
   });
 
   it('ignores an empty override rather than blanking the setting', () => {

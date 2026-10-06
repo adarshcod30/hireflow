@@ -13,10 +13,13 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  background: #08080c;
+  background: var(--bg);
+  color: var(--text);
 }
-.theme-light,
-.theme-dark {
+#root {
+  min-height: 100vh;
+}
+.themed {
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);

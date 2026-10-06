@@ -131,6 +131,27 @@ describe('the console shell', () => {
   });
 });
 
+describe('the theme button in the console', () => {
+  const shell = () => (
+    <Routes>
+      <Route path="/recruiter" element={<RequireAuth><ConsoleLayout /></RequireAuth>}>
+        <Route index element={<p>overview page</p>} />
+      </Route>
+    </Routes>
+  );
+
+  it('flips the whole console between light and dark, and says what it will do', async () => {
+    localStorage.setItem('hireflow.theme', 'light');
+    mockApi(signedIn());
+    const user = userEvent.setup();
+    renderWithProviders(shell(), { route: '/recruiter' });
+    await user.click(await screen.findByRole('button', { name: 'Switch to dark theme' }));
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(screen.getByRole('button', { name: 'Switch to light theme' })).toBeInTheDocument();
+    localStorage.clear();
+  });
+});
+
 describe('overview', () => {
   const page = () => (
     <Routes>
@@ -154,11 +175,17 @@ describe('overview', () => {
     expect(kpis.getByText('Needs attention').closest('.kpi')).toHaveClass('kpi-attn');
   });
 
+  it('says it is live, with when the numbers last refreshed', async () => {
+    mockApi({ ...signedIn(), 'GET /v1/stats/overview': overview(), 'GET /v1/applications': recent });
+    renderWithProviders(page(), { route: '/recruiter' });
+    expect(await screen.findByText(/Live, updated just now/)).toBeInTheDocument();
+  });
+
   it('describes a drop, no change and brand new activity in plain words', async () => {
     const totals = (over: Record<string, number | null>) => ({ ...overview().totals, ...over });
     const cases: [Record<string, number | null>, RegExp][] = [
       [{ last7Days: 6, previous7Days: 8 }, /25%/],
-      [{ last7Days: 5, previous7Days: 5 }, /No change/],
+      [{ last7Days: 5, previous7Days: 5 }, /No change vs prior week/],
       [{ last7Days: 4, previous7Days: 0 }, /New activity/],
     ];
     for (const [over, expected] of cases) {

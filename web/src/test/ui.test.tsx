@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { DailyBars, Funnel, Histogram, StageBar } from '../components/charts';
+import { DailyTrend, Histogram, PipelineDonut, Sparkline, StageBar } from '../components/charts';
 import { Drawer, Modal } from '../components/overlay';
 import { Avatar, Chips, EmptyState, ErrorNote, Loading, ScoreRing, StatusBadge } from '../components/ui';
 import { zeroStatuses } from './helpers';
@@ -84,7 +84,7 @@ describe('small components', () => {
 describe('charts', () => {
   it('describes the daily chart in words, since the bars carry no text', () => {
     render(
-      <DailyBars
+      <DailyTrend
         data={[
           { date: '2030-01-01', count: 2 },
           { date: '2030-01-02', count: 0 },
@@ -95,12 +95,22 @@ describe('charts', () => {
     expect(screen.getByRole('img', { name: 'Applications per day for the last 3 days, 6 in total' })).toBeInTheDocument();
   });
 
-  it('scales bars against the busiest day, and survives an all-zero series', () => {
-    const { container, rerender } = render(<DailyBars data={[{ date: '2030-01-01', count: 1 }, { date: '2030-01-02', count: 4 }]} />);
-    const heights = [...container.querySelectorAll<HTMLElement>('.bar i')].map((i) => i.style.height);
-    expect(heights).toEqual(['25%', '100%']);
-    rerender(<DailyBars data={[{ date: '2030-01-01', count: 0 }]} />);
-    expect(container.querySelector<HTMLElement>('.bar i')!.style.height).toBe('0%');
+  it('draws one hover target per day, labelled with the count and the date', () => {
+    const { container } = render(<DailyTrend data={[{ date: '2030-01-01', count: 1 }, { date: '2030-01-02', count: 4 }]} />);
+    const tips = [...container.querySelectorAll('.trend-tip')].map((t) => t.textContent);
+    expect(tips).toEqual(['1 applicationJan 1', '4 applicationsJan 2']);
+    expect(container.querySelectorAll('.trend-line')).toHaveLength(1);
+  });
+
+  it('puts the busiest day at the top of the plot, and survives an all-zero or empty series', () => {
+    const { container, rerender } = render(<DailyTrend data={[{ date: '2030-01-01', count: 1 }, { date: '2030-01-02', count: 4 }]} />);
+    const heights = [...container.querySelectorAll<HTMLElement>('.trend-hit')].map((h) => h.style.getPropertyValue('--y'));
+    expect(heights).toEqual(['72.5%', '14%']);
+    rerender(<DailyTrend data={[{ date: '2030-01-01', count: 0 }]} />);
+    expect(container.querySelector<HTMLElement>('.trend-hit')!.style.getPropertyValue('--y')).toBe('92%');
+    rerender(<DailyTrend data={[]} />);
+    expect(container.querySelectorAll('.trend-hit')).toHaveLength(0);
+    expect(container.querySelector('.trend-line')).toBeNull();
   });
 
   it('lists every score band in the histogram description', () => {
@@ -108,16 +118,28 @@ describe('charts', () => {
     expect(screen.getByRole('img', { name: /0-19: 1, 80-100: 6/ })).toBeInTheDocument();
   });
 
-  it('shows each stage with its share of all applications', () => {
-    render(<Funnel byStatus={{ ...zeroStatuses, applied: 6, screening: 3, hired: 1 }} />);
-    expect(screen.getByText('Applied').closest('.funnel-row')).toHaveTextContent('60%');
-    expect(screen.getByText('Screening').closest('.funnel-row')).toHaveTextContent('30%');
-    expect(screen.getByText('Offer').closest('.funnel-row')).toHaveTextContent('0%');
+  it('shows each stage with its count and share of all applications, and the total in the ring', () => {
+    const { container } = render(<PipelineDonut byStatus={{ ...zeroStatuses, applied: 6, screening: 3, hired: 1 }} />);
+    expect(screen.getByText('Applied').closest('li')).toHaveTextContent('660%');
+    expect(screen.getByText('Screening').closest('li')).toHaveTextContent('330%');
+    expect(screen.getByText('Offer').closest('li')).toHaveTextContent('00%');
+    expect(container.querySelector('.donut-centre strong')).toHaveTextContent('10');
+    // Only stages with someone in them get an arc
+    expect(container.querySelectorAll('.donut-seg')).toHaveLength(3);
   });
 
-  it('shows zero percent for every stage when there are no applications', () => {
-    render(<Funnel byStatus={zeroStatuses} />);
-    expect(screen.getByText('Applied').closest('.funnel-row')).toHaveTextContent('0%');
+  it('shows an empty ring and zero percent everywhere when there are no applications', () => {
+    const { container } = render(<PipelineDonut byStatus={zeroStatuses} />);
+    expect(screen.getByText('Applied').closest('li')).toHaveTextContent('00%');
+    expect(container.querySelectorAll('.donut-seg')).toHaveLength(0);
+    expect(container.querySelector('.donut-centre strong')).toHaveTextContent('0');
+  });
+
+  it('draws a sparkline only when there are at least two points', () => {
+    const { container, rerender } = render(<Sparkline values={[1, 4, 2]} />);
+    expect(container.querySelector('.spark-line')).not.toBeNull();
+    rerender(<Sparkline values={[3]} />);
+    expect(container.querySelector('.spark')).toBeNull();
   });
 
   it('summarises a job row as a stacked bar with a text equivalent, or says there is nothing', () => {

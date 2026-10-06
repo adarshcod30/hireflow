@@ -95,16 +95,11 @@
   width: 100%;
   min-height: 44px;
   padding: 10px 14px;
-  background: var(--surface);
+  background: var(--input-bg, var(--surface));
   border: 1px solid var(--border-strong);
   border-radius: var(--r-md);
   color: var(--text);
   transition: border-color 0.15s, box-shadow 0.15s;
-}
-.theme-dark .input,
-.theme-dark .select,
-.theme-dark .textarea {
-  background: var(--surface-2);
 }
 .textarea {
   resize: vertical;
@@ -165,14 +160,10 @@
   gap: 6px;
   padding: 3px 10px;
   border-radius: 8px;
-  background: var(--surface-3);
-  color: var(--muted);
+  background: var(--chip-bg);
+  color: var(--chip-text);
   font-size: 0.78rem;
   line-height: 1.5;
-}
-.theme-light .chip {
-  background: #eceaf5;
-  color: #4b4b63;
 }
 .chip-accent {
   background: var(--accent-soft) !important;
@@ -365,6 +356,10 @@ button.chip {
   width: fit-content;
   max-width: 100%;
   overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 .tab {
   border: 0;
@@ -389,7 +384,9 @@ button.chip {
 }
 
 /* Tables */
+/* Relative, so the visually hidden labels inside the table are clipped with it and cannot widen the page */
 .table-wrap {
+  position: relative;
   overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
@@ -401,6 +398,7 @@ button.chip {
   font-size: 0.92rem;
 }
 .table th {
+  background: var(--surface-2);
   padding: 12px 16px;
   text-align: left;
   font-weight: 450;
@@ -419,8 +417,18 @@ button.chip {
 .table tr:last-child td {
   border-bottom: 0;
 }
+.table tbody tr {
+  transition: background 0.12s;
+}
 .table tbody tr:hover {
-  background: var(--surface-2);
+  background: var(--accent-soft);
+}
+.table th:first-child,
+.table td:first-child {
+  min-width: 210px;
+}
+.table td.muted {
+  white-space: nowrap;
 }
 .table .num {
   text-align: right;
@@ -443,7 +451,7 @@ button.chip {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(4, 4, 10, 0.55);
+  background: var(--overlay);
   backdrop-filter: blur(3px);
   animation: fade 0.18s ease-out;
 }

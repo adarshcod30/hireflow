@@ -30,7 +30,7 @@ export class HireflowStack extends Stack {
 
     const network = new Network(this, 'Network');
     const storage = new Storage(this, 'Storage');
-    const secrets = new AppSecrets(this, 'Secrets', { adminEmail: config.senderEmail });
+    const secrets = new AppSecrets(this, 'Secrets', { adminEmail: config.adminEmail });
     const database = new Database(this, 'Database', {
       vpc: network.vpc,
       clientSecurityGroup: network.apiSecurityGroup,
@@ -83,16 +83,23 @@ export class HireflowStack extends Stack {
         RESUME_BUCKET: storage.resumes.bucketName,
         NOTIFICATIONS_QUEUE_URL: workers.notificationsQueue.queueUrl,
         WEB_ORIGINS: website.url,
+        // A working day. The console has no refresh flow yet, and 15 minutes signed people out mid-task.
+        JWT_EXPIRES_IN: '8h',
       },
     });
 
-    // Email addresses that SES will send from and, while in the sandbox, to.
-    // Each one gets a verification email that must be clicked once.
-    for (const address of new Set([config.senderEmail, config.alertEmail])) {
-      new ses.EmailIdentity(this, `Identity${address.replace(/[^a-zA-Z0-9]/g, '')}`, {
-        identity: ses.Identity.email(address),
-      });
-    }
+    // Mail is sent from a verified domain, signed with DKIM, so that Gmail and others trust it.
+    // The three CNAME records in the outputs prove ownership and publish the signing keys.
+    const senderDomain = config.senderEmail.split('@')[1];
+    const domainIdentity = new ses.EmailIdentity(this, 'IdentitySenderDomain', {
+      identity: ses.Identity.domain(senderDomain),
+      dkimSigning: true,
+    });
+    // While SES is in the sandbox it only delivers to verified addresses, and the alert address gets
+    // every candidate email. It receives one verification email that must be clicked once.
+    new ses.EmailIdentity(this, `Identity${config.alertEmail.replace(/[^a-zA-Z0-9]/g, '')}`, {
+      identity: ses.Identity.email(config.alertEmail),
+    });
 
     const observability = new Observability(this, 'Observability', {
       alertEmail: config.alertEmail,
@@ -125,6 +132,11 @@ export class HireflowStack extends Stack {
       'CloudFront distribution to invalidate after a web deploy',
     );
     out('ResumeBucket', storage.resumes.bucketName, 'Candidate resumes');
+    [
+      [domainIdentity.dkimDnsTokenName1, domainIdentity.dkimDnsTokenValue1],
+      [domainIdentity.dkimDnsTokenName2, domainIdentity.dkimDnsTokenValue2],
+      [domainIdentity.dkimDnsTokenName3, domainIdentity.dkimDnsTokenValue3],
+    ].forEach(([name, value], i) => out(`DkimRecord${i + 1}`, `${name} CNAME ${value}`, 'Publish this DNS record to sign mail'));
     out('AdminSecretArn', secrets.admin.secretArn, 'First admin login (email and password)');
     out('DeployRoleArn', ci.role.roleArn, 'GitHub Actions assumes this role through OIDC');
     out('AlertsTopicArn', observability.topic.topicArn, 'All alarms publish here');

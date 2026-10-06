@@ -2,6 +2,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth';
+import { ThemeToggle } from '../theme';
 
 export function Brand() {
   return (
@@ -27,7 +28,7 @@ export function PublicLayout() {
   }, [signOut, logout, navigate, location.pathname]);
 
   return (
-    <div className="theme-light pub">
+    <div className="themed pub">
       <a className="skip-link" href="#main">
         Skip to content
       </a>
@@ -39,6 +40,7 @@ export function PublicLayout() {
           </NavLink>
         </nav>
         <div className="pub-actions">
+          <ThemeToggle />
           {user ? (
             <Link className="btn btn-primary btn-sm" to="/recruiter">
               Open console <ArrowUpRight size={16} />

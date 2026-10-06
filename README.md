@@ -95,6 +95,8 @@ show the real scores from the table in [Screening Pipeline](#screening-pipeline)
 | Strict pipeline | `applied`, `screening`, `interview`, `offer`, `hired`, with `rejected` and `withdrawn` as exits. Illegal moves are refused, and two recruiters editing at once get a clean `409` |
 | Email exactly once | A transactional outbox plus a claim table turns SQS's at-least-once delivery into one email per change |
 | Recruiter console | A dashboard with week-over-week numbers and charts, a drag-and-drop pipeline board per role, a searchable candidates table across every role, and a full event history for each application |
+| Light and dark | One button in the sidebar and the public header, remembered per browser, and it follows the system setting on a first visit. The sign-in page is pinned to its dark look so it is the same in both |
+| Live dashboard | The overview refreshes itself every 30 seconds and says when it last did, so a recruiter can leave it open |
 | Real pay and work details | Every role carries employment type, work mode and a salary range, shown the way the reader expects (`₹45L - ₹70L / yr`, `$45 - $70 / hr`) |
 | Daily digest | Every morning at 09:00 IST, applications nobody has touched for a week are emailed to the team |
 | Real alerting | Twelve alarms to one email topic, an external uptime probe, a dashboard and a monthly spend alarm |
@@ -109,7 +111,7 @@ show the real scores from the table in [Screening Pipeline](#screening-pipeline)
 | Database | PostgreSQL 17 (RDS), hand-written SQL migrations, `citext`, enums, generated `tsvector` column with GIN index, partial indexes |
 | Async work | S3 events, SQS with dead-letter queues, Lambda (Node 22, ARM), EventBridge |
 | AI | Amazon Bedrock, Nova Lite through the `apac.` inference profile, Converse API with a forced tool |
-| Email | Amazon SES with HTML escaping and header-injection protection |
+| Email | Amazon SES from a verified domain signed with DKIM, HTML escaping and header-injection protection |
 | Infrastructure | AWS CDK (TypeScript): VPC, EC2, RDS, S3, CloudFront, SQS, Lambda, SNS, CloudWatch, Secrets Manager, SSM, IAM, Budgets |
 | CI/CD | GitHub Actions, OIDC to AWS (no stored access keys), SSM Run Command |
 | Testing | Jest 30 and Supertest on real PostgreSQL, Vitest and Testing Library, CDK assertions, ShellCheck, a post-deploy smoke test and a live end-to-end script |
@@ -279,7 +281,7 @@ The parts worth reading in the code, each with the test that pins it down.
 
 ## Deployment & Infrastructure
 
-Everything is in [`infra/`](infra) as one CDK stack of about 128 resources. See [docs/runbook.md](docs/runbook.md) for the
+Everything is in [`infra/`](infra) as one CDK stack of about 130 resources. See [docs/runbook.md](docs/runbook.md) for the
 exact commands, the alarm playbook and the teardown.
 
 | Concern | How it is done |
@@ -306,7 +308,7 @@ second instance behind a load balancer would remove the gap.
 
 **What it does not do.** There is one API instance and one database zone, so a zone outage is an outage. Scaling out means an
 Auto Scaling group behind a load balancer, and the outbox and claims were designed so that is safe, but it is not built.
-SES is in the sandbox, so email is redirected to one verified inbox. The database connection is encrypted but does not verify
+SES is in the sandbox, so email is redirected to one verified inbox (it is signed with DKIM from my own domain, so it arrives in the inbox and not in Spam). The database connection is encrypted but does not verify
 the server certificate yet.
 
 ## Project Structure
@@ -462,10 +464,10 @@ cd infra   && npm test
 |---|---|---|---|---|---|
 | `api` | 334 | 97.3% | 89.3% | 97.9% | Unit tests, and end-to-end tests over HTTP against real PostgreSQL, including concurrency, the migration up and down, and `EXPLAIN` checks that the indexes are used |
 | `lambdas` | 95 | 99.6% | 93.4% | 100% | Handlers with fakes, retry and partial-batch behaviour, the signing vector, email escaping, prompt-injection handling |
-| `web` | 128 | 97.9% | 95.6% | 98.7% | Every page and flow with a mocked network: apply and upload, filters, the board including drag and drop, the side panel, forms, accessibility of the dialogs |
-| `infra` | 40 | n/a | n/a | n/a | The synthesised template: no NAT, no SSH, private database, IMDSv2, DLQs, one-model Bedrock access, OIDC trust, IAM wildcard allowlist |
+| `web` | 138 | 97.9% | 95.8% | 98.7% | Every page and flow with a mocked network: apply and upload, filters, the board including drag and drop, the side panel, forms, accessibility of the dialogs |
+| `infra` | 42 | n/a | n/a | n/a | The synthesised template: no NAT, no SSH, private database, IMDSv2, DLQs, one-model Bedrock access, OIDC trust, IAM wildcard allowlist, a signed sender domain |
 
-That is 597 tests, plus the live checks (`smoke.sh`, `e2e-live.sh`) against the deployed system. Every database test file clones a template database, so they run in parallel without sharing state.
+That is 609 tests, plus the live checks (`smoke.sh`, `e2e-live.sh`) against the deployed system. Every database test file clones a template database, so they run in parallel without sharing state.
 Coverage thresholds fail the build if they drop. The infrastructure tests were checked by mutation: adding a NAT gateway and
 opening port 22 made three of them fail.
 
@@ -475,6 +477,7 @@ opening port 22 made three of them fail.
 - [ ] A read-only demo login, so a visitor can try the recruiter console without an admin account
 - [ ] Verify the RDS server certificate instead of only encrypting the connection
 - [ ] Move SES out of the sandbox and send to real candidates, with bounce and complaint handling
+- [ ] Refresh tokens, so a session can be short without cutting anyone off mid-task (it is a fixed 8 hours today)
 - [ ] A second API instance behind a load balancer, and a Multi-AZ database
 - [ ] Measure screening agreement against human reviewers on a labelled set
 - [ ] Per-recruiter notes and a comment thread on each application

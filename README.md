@@ -107,7 +107,7 @@ application sits right now, the fit-score bands, the busiest roles and the lates
 | One minute application | Public form, then the PDF goes browser to S3 on a presigned POST that S3 itself limits to one PDF of up to 5 MB |
 | Safe to double click | The same email applying twice returns the first application and never replaces its resume. Twenty simultaneous identical requests create one row |
 | Resume screening | Bedrock Nova Lite reads the PDF and returns a 0 to 100 fit score, a short summary and the skills it saw, through a forced typed tool call |
-| Injection resistant | The resume is untrusted data. A resume that tells the model to output 100 scored 0 in testing |
+| Injection resistant | The resume is untrusted data. A resume that tells the model to output 100 scored 20 on the live model, level with other weak resumes, against a mean of 73 for strong ones |
 | Strict pipeline | `applied`, `screening`, `interview`, `offer`, `hired`, with `rejected` and `withdrawn` as exits. Illegal moves are refused, and two recruiters editing at once get a clean `409` |
 | Email exactly once | A transactional outbox plus a claim table turns SQS's at-least-once delivery into one email per change |
 | Recruiter console | A dashboard with week-over-week numbers and charts, a drag-and-drop pipeline board per role, a searchable candidates table across every role, and a full event history for each application |
@@ -480,7 +480,7 @@ cd infra   && npm test
 |---|---|---|---|---|---|
 | `api` | 334 | 97.3% | 89.3% | 97.9% | Unit tests, and end-to-end tests over HTTP against real PostgreSQL, including concurrency, the migration up and down, and `EXPLAIN` checks that the indexes are used |
 | `lambdas` | 95 | 99.6% | 93.4% | 100% | Handlers with fakes, retry and partial-batch behaviour, the signing vector, email escaping, prompt-injection handling |
-| `web` | 138 | 97.6% | 95.5% | 98.7% | Every page and flow with a mocked network: apply and upload, filters, the board including drag and drop, the side panel, forms, accessibility of the dialogs |
+| `web` | 138 | 97.6% | 95.7% | 98.7% | Every page and flow with a mocked network: apply and upload, filters, the board including drag and drop, the side panel, forms, accessibility of the dialogs |
 | `infra` | 42 | n/a | n/a | n/a | The synthesised template: no NAT, no SSH, private database, IMDSv2, DLQs, one-model Bedrock access, OIDC trust, IAM wildcard allowlist, a signed sender domain |
 
 That is 609 tests, plus the live checks (`smoke.sh`, `e2e-live.sh`) against the deployed system. Every database test file clones a template database, so they run in parallel without sharing state.

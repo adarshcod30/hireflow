@@ -102,6 +102,7 @@ de-duplicated afterwards because a schema alone is not a guarantee.
 
 Measured on three synthetic resumes against the seeded job: a strong match scored 90, an irrelevant
 one scored 10, and a resume that told the model to ignore its instructions and output 100 scored 0.
+(The later run on the deployed system, with 130 resumes, scored the injection resume 20, level with other weak ones. Both are small samples.)
 That is three examples, not a benchmark, and the README says so. Each call took 2.3 to 3.2 seconds and used
 about 2,275 input and 53 output tokens, roughly $0.00018.
 

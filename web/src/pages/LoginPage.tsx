@@ -35,8 +35,8 @@ export function LoginPage() {
       <section className="login-art" aria-hidden="true">
         <Brand />
         <div>
-          <h2>Every application, from first click to signed offer.</h2>
-          <p>Resumes are screened in seconds, candidates hear back exactly once, and nothing slips through the cracks.</p>
+          <h2>Let the machine read first. You make the call.</h2>
+          <p>Every resume is scored in seconds, every move is yours to make, and every candidate hears back exactly once.</p>
         </div>
         <span className="muted small">
           <ShieldCheck size={14} style={{ display: 'inline', verticalAlign: '-2px' }} /> Signed requests, least-privilege access

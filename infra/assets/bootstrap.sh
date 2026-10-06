@@ -134,7 +134,8 @@ AGENT
 
 systemctl daemon-reload
 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
-# The API is started by the first deploy, not here: there is no release to run yet
-systemctl enable --now caddy
-systemctl enable hireflow-api
+# Neither service is started here. The first deploy starts them: there is no release to run yet, and
+# Caddy should not ask Let's Encrypt for a certificate before the DNS record exists, because failed
+# attempts count against a limit of five an hour.
+systemctl enable caddy hireflow-api
 echo "bootstrap finished"

@@ -1,0 +1,52 @@
+name: Deploy
+
+# Runs after CI passes on main. GitHub signs a short-lived token for the run and AWS
+# exchanges it for one hour of credentials (OIDC), so no access key is stored anywhere.
+# The role can ship a release and a web build. It cannot change infrastructure.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ARTIFACTS_BUCKET: ${{ vars.ARTIFACTS_BUCKET }}
+  INSTANCE_ID: ${{ vars.INSTANCE_ID }}
+  WEB_BUCKET: ${{ vars.WEB_BUCKET }}
+  DISTRIBUTION_ID: ${{ vars.DISTRIBUTION_ID }}
+  API_URL: ${{ vars.API_URL }}
+
+jobs:
+  deploy:
+    name: Deploy API and web app
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Deploy the API through SSM
+        run: scripts/deploy-api.sh
+      - name: Publish the web app
+        run: scripts/deploy-web.sh
+      - name: Check the live API
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-delay 5 --retry-all-errors "$API_URL/health/ready"

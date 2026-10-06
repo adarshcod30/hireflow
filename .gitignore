@@ -12,3 +12,6 @@ cdk.out/
 .claude.json
 CLAUDE.local.md
 .aws-sam/
+
+out/
+.reference/

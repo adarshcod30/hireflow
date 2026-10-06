@@ -71,11 +71,12 @@ export class UpdateJobDto extends JobDetailsDto {
   @IsOptional() @IsIn(JOB_STATUSES) status?: JobStatus;
 }
 
-export class JobListQuery extends PageQuery {
-  @IsOptional() @IsIn(JOB_STATUSES) status?: JobStatus;
-  @IsOptional() @IsString() @MaxLength(100) q?: string;
-}
-
 export class PublicJobListQuery extends PageQuery {
   @IsOptional() @IsString() @MaxLength(100) q?: string;
+  @IsOptional() @IsIn(WORK_MODES) workMode?: WorkMode;
+  @IsOptional() @IsIn(EMPLOYMENT_TYPES) employmentType?: EmploymentType;
+}
+
+export class JobListQuery extends PublicJobListQuery {
+  @IsOptional() @IsIn(JOB_STATUSES) status?: JobStatus;
 }

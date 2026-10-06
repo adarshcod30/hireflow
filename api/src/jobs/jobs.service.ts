@@ -43,6 +43,8 @@ const toView = (j: JobEntity): JobView => ({
 
 interface ListOptions {
   status?: JobStatus;
+  workMode?: WorkMode;
+  employmentType?: EmploymentType;
   q?: string;
   cursor?: string;
   limit?: number;
@@ -120,6 +122,9 @@ export class JobsService {
 
     const qb = this.jobs.createQueryBuilder('j');
     if (status) qb.andWhere('j.status = :status', { status });
+    if (options.workMode) qb.andWhere('j.workMode = :workMode', { workMode: options.workMode });
+    if (options.employmentType)
+      qb.andWhere('j.employmentType = :employmentType', { employmentType: options.employmentType });
     if (options.q?.trim()) {
       // websearch_to_tsquery accepts whatever a person types, quotes and minus included, and never throws
       qb.andWhere(`j.search @@ websearch_to_tsquery('english', :q)`, {

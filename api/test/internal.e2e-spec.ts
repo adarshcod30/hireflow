@@ -218,6 +218,30 @@ describe('internal API (signed requests from the workers)', () => {
       expect(res.body.items.map((i: { id: string }) => i.id)).not.toContain(fresh);
     });
 
+    it('is not reset by automated screening, so an idle application still shows up as idle', async () => {
+      const { id } = await applicationWithJob();
+      await t.db.query(`UPDATE applications SET updated_at = now() - interval '10 days' WHERE id = $1`, [id]);
+
+      // The worker starts screening and then reports a result
+      expect((await get(`/v1/internal/applications/${id}/screening-context`)).status).toBe(200);
+      const done = await post(`/v1/internal/applications/${id}/screening`, {
+        outcome: 'done',
+        fitScore: 77,
+        summary: 'A decent match',
+        skills: ['sql'],
+      });
+      expect(done.status).toBe(200);
+
+      const [row] = await t.db.query(
+        `SELECT fit_score, screening_status, updated_at < now() - interval '9 days' AS still_old FROM applications WHERE id = $1`,
+        [id],
+      );
+      expect(row).toMatchObject({ fit_score: 77, screening_status: 'done', still_old: true });
+      const report = await get('/v1/internal/reports/stale-applications?days=7');
+      expect(report.body.total).toBe(1);
+      expect(report.body.items[0]).toMatchObject({ id, daysIdle: 10 });
+    });
+
     it('rejects an absurd window', async () => {
       expect((await get('/v1/internal/reports/stale-applications?days=0')).status).toBe(400);
       expect((await get('/v1/internal/reports/stale-applications?days=9999')).status).toBe(400);

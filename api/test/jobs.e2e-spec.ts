@@ -51,6 +51,27 @@ describe('jobs', () => {
       });
     });
 
+    it('filters the public board by work mode and employment type', async () => {
+      const user = await createUser(t, 'recruiter');
+      const post = (over: Record<string, unknown>) =>
+        http()
+          .post('/v1/jobs')
+          .set(bearer(user.token))
+          .send(validJob({ status: 'open', ...over }));
+      await post({ title: 'Remote contractor', workMode: 'remote', employmentType: 'contract' });
+      await post({ title: 'Hybrid employee', workMode: 'hybrid', employmentType: 'full_time' });
+      await post({ title: 'Onsite intern', workMode: 'onsite', employmentType: 'internship' });
+
+      const titles = async (query: Record<string, string>) =>
+        ((await http().get('/v1/public/jobs').query(query)).body.items as { title: string }[]).map((j) => j.title);
+      expect(await titles({ workMode: 'remote' })).toEqual(['Remote contractor']);
+      expect(await titles({ employmentType: 'internship' })).toEqual(['Onsite intern']);
+      expect(await titles({ workMode: 'hybrid', employmentType: 'full_time' })).toEqual(['Hybrid employee']);
+      expect(await titles({ workMode: 'remote', employmentType: 'internship' })).toEqual([]);
+      expect(await titles({})).toHaveLength(3);
+      expect((await http().get('/v1/public/jobs').query({ workMode: 'underwater' })).status).toBe(400);
+    });
+
     it('stores compensation and work details, and shows them on the public board once the job is open', async () => {
       const user = await createUser(t, 'recruiter');
       const created = await http()

@@ -15,13 +15,14 @@ export class InternalService {
    * Safe to call again if the queue redelivers the message.
    */
   async beginScreening(applicationId: string) {
+    // Screening is automation, not a person touching the application, so none of these updates
+    // change updated_at. The stale report measures idleness from it.
     const rows = await updateReturning(
       this.db,
       `UPDATE applications a
        SET resume_key = $2,
            resume_uploaded_at = COALESCE(a.resume_uploaded_at, now()),
-           screening_status = CASE WHEN a.screening_status = 'done' THEN 'done' ELSE 'processing' END,
-           updated_at = now()
+           screening_status = CASE WHEN a.screening_status = 'done' THEN 'done' ELSE 'processing' END
        FROM jobs j
        WHERE a.id = $1 AND j.id = a.job_id
        RETURNING a.id, a.screening_status, j.title, j.description, j.required_skills`,
@@ -51,14 +52,14 @@ export class InternalService {
             this.db,
             `UPDATE applications
              SET screening_status = 'done', fit_score = $2, screening_summary = $3, extracted_skills = $4::text[],
-                 screened_at = now(), updated_at = now()
+                 screened_at = now()
              WHERE id = $1 RETURNING id`,
             [applicationId, dto.fitScore, dto.summary ?? null, dto.skills ?? []],
           )
         : await updateReturning(
             this.db,
             `UPDATE applications
-             SET screening_status = 'failed', screening_summary = $2, screened_at = now(), updated_at = now()
+             SET screening_status = 'failed', screening_summary = $2, screened_at = now()
              WHERE id = $1 AND screening_status <> 'done' RETURNING id`,
             [applicationId, dto.error ?? dto.summary ?? 'Screening failed'],
           );

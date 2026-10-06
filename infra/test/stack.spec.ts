@@ -394,7 +394,9 @@ describe('alerting', () => {
   it('keeps the first administrator on their own address, independent of the mail sender', () => {
     const moved = synth({ senderEmail: 'hello@example.org' });
     moved.hasResourceProperties('AWS::SecretsManager::Secret', {
-      GenerateSecretString: Match.objectLike({ SecretStringTemplate: JSON.stringify({ email: 'adarshdwivedi256@gmail.com' }) }),
+      GenerateSecretString: Match.objectLike({
+        SecretStringTemplate: JSON.stringify({ email: 'adarshdwivedi256@gmail.com' }),
+      }),
     });
     moved.hasResourceProperties('AWS::SES::EmailIdentity', { EmailIdentity: 'example.org' });
   });

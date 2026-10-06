@@ -136,7 +136,9 @@ export class HireflowStack extends Stack {
       [domainIdentity.dkimDnsTokenName1, domainIdentity.dkimDnsTokenValue1],
       [domainIdentity.dkimDnsTokenName2, domainIdentity.dkimDnsTokenValue2],
       [domainIdentity.dkimDnsTokenName3, domainIdentity.dkimDnsTokenValue3],
-    ].forEach(([name, value], i) => out(`DkimRecord${i + 1}`, `${name} CNAME ${value}`, 'Publish this DNS record to sign mail'));
+    ].forEach(([name, value], i) =>
+      out(`DkimRecord${i + 1}`, `${name} CNAME ${value}`, 'Publish this DNS record to sign mail'),
+    );
     out('AdminSecretArn', secrets.admin.secretArn, 'First admin login (email and password)');
     out('DeployRoleArn', ci.role.roleArn, 'GitHub Actions assumes this role through OIDC');
     out('AlertsTopicArn', observability.topic.topicArn, 'All alarms publish here');

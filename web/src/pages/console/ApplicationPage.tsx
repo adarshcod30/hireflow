@@ -24,7 +24,7 @@ export function ApplicationPage() {
         <header className="row" style={{ gap: 16, marginBottom: 24 }}>
           <Avatar name={a.candidateName} size={56} />
           <div>
-            <h1 style={{ fontSize: '1.8rem', fontWeight: 450 }}>{a.candidateName}</h1>
+            <h1 style={{ fontSize: '1.8rem', fontWeight: 650 }}>{a.candidateName}</h1>
             <p className="muted">{a.candidateEmail}</p>
           </div>
         </header>

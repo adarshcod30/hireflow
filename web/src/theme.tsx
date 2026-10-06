@@ -64,19 +64,21 @@ export function useTheme(): ThemeValue {
   return value;
 }
 
-/** A round icon button that flips between light and dark. */
-export function ThemeToggle({ className = '' }: { className?: string }) {
+/** A button that flips between light and dark. Icon only by default, or with a word beside the icon. */
+export function ThemeToggle({ className = '', labelled = false }: { className?: string; labelled?: boolean }) {
   const { theme, toggle } = useTheme();
   const dark = theme === 'dark';
+  const action = dark ? 'Switch to light theme' : 'Switch to dark theme';
   return (
     <button
       type="button"
-      className={`btn btn-ghost btn-icon btn-sm theme-toggle ${className}`.trim()}
+      className={`btn btn-sm theme-toggle ${labelled ? 'btn-secondary' : 'btn-ghost btn-icon'} ${className}`.trim()}
       onClick={toggle}
-      aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
-      title={dark ? 'Switch to light theme' : 'Switch to dark theme'}
+      aria-label={action}
+      title={action}
     >
-      {dark ? <Sun size={17} aria-hidden="true" /> : <Moon size={17} aria-hidden="true" />}
+      {dark ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+      {labelled && <span className="btn-label">{dark ? 'Light' : 'Dark'}</span>}
     </button>
   );
 }

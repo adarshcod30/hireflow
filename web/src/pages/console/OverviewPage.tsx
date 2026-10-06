@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api';
 import { useAuth } from '../../auth';
-import { Histogram, PipelineDonut, Sparkline, DailyTrend } from '../../components/charts';
+import { DailyBars, Histogram, PipelineDonut, Sparkline } from '../../components/charts';
 import { Avatar, EmptyState, ErrorNote, ScoreRing, Skeleton, StatusBadge } from '../../components/ui';
 import { percentChange, timeAgo } from '../../lib/format';
 import { useNow } from '../../lib/hooks';
@@ -58,9 +58,6 @@ function Kpi({
   );
 }
 
-const todayLabel = () =>
-  new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-
 export function OverviewPage() {
   const { user } = useAuth();
   const now = useNow();
@@ -71,7 +68,7 @@ export function OverviewPage() {
   });
   const recent = useQuery({
     queryKey: ['applications', 'recent'],
-    queryFn: () => api<Page<ApplicationRow>>('/v1/applications?limit=6', { auth: true }),
+    queryFn: () => api<Page<ApplicationRow>>('/v1/applications?limit=5', { auth: true }),
     refetchInterval: REFRESH_MS,
   });
 
@@ -84,7 +81,6 @@ export function OverviewPage() {
     <>
       <header className="page-head">
         <div>
-          <span className="eyebrow">{todayLabel()}</span>
           <h1>Welcome back, {first}</h1>
           <p>Here is where hiring stands today.</p>
         </div>
@@ -145,7 +141,7 @@ export function OverviewPage() {
                 </div>
                 <span className="chip chip-accent">{o.daily.reduce((sum, d) => sum + d.count, 0)} in total</span>
               </div>
-              <DailyTrend data={o.daily} />
+              <DailyBars data={o.daily} />
             </section>
             <section className="panel span-5" aria-label="Pipeline">
               <div className="panel-head">

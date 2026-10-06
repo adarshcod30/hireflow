@@ -48,14 +48,15 @@ export function ConsoleLayout() {
             </div>
           </div>
           <div className="side-actions">
-            <ThemeToggle />
+            <ThemeToggle labelled />
             <button
-              className="btn btn-ghost btn-sm"
+              className="btn btn-secondary btn-sm"
+              aria-label="Sign out"
               // Leave first, and let the public page finish the sign-out when it arrives. Ending the
               // session while this page is still on screen would send the route guard to the login page.
               onClick={() => navigate('/', { state: { signOut: true } })}
             >
-              <LogOut size={16} aria-hidden="true" /> Sign out
+              <LogOut size={16} aria-hidden="true" /> <span className="btn-label">Sign out</span>
             </button>
           </div>
         </div>

@@ -25,43 +25,29 @@ function smoothPath(points: [number, number][]): string {
 
 const dayLabel = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
+/** Bars are drawn up to this share of the plot height, which leaves room for the tallest bar's tooltip. */
+const BAR_HEADROOM = 92;
+
 /**
- * Applications per day as a smooth area chart that fills whatever width it is given. The curve is
- * drawn in a stretched viewBox, so text and dots live in plain HTML on top where they stay sharp.
- * A plain description is attached for screen readers, since the drawing carries no text.
+ * Applications per day as bars that fill whatever height and width the panel gives them. Each day has a
+ * hover target with the exact count and date. A plain description is attached for screen readers, since the
+ * bars carry no text of their own.
  */
-export function DailyTrend({ data }: { data: { date: string; count: number }[] }) {
+export function DailyBars({ data }: { data: { date: string; count: number }[] }) {
   const max = Math.max(1, ...data.map((d) => d.count));
   const total = data.reduce((sum, d) => sum + d.count, 0);
-  const n = data.length;
-  const y = (count: number) => 92 - (count / max) * 78;
-  const x = (i: number) => ((i + 0.5) / Math.max(n, 1)) * 100;
-  const points: [number, number][] = data.map((d, i) => [x(i), y(d.count)]);
-  const line = smoothPath(points);
-  const area = n === 0 ? '' : `${line} L${x(n - 1)},100 L${x(0)},100 Z`;
-
   return (
-    <div className="trend" role="img" aria-label={`Applications per day for the last ${n} days, ${total} in total`}>
-      <div className="trend-plot">
-        <span className="trend-max faint">{max}</span>
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="trend-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="var(--accent)" stopOpacity="0.32" />
-              <stop offset="1" stopColor="var(--accent)" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          {[14, 40, 66, 92].map((line) => (
-            <line key={line} className="trend-grid" x1="0" x2="100" y1={line} y2={line} />
-          ))}
-          {area && <path d={area} fill="url(#trend-fill)" />}
-          {line && <path d={line} className="trend-line" />}
-        </svg>
-        <div className="trend-hits">
+    <div className="dbars" role="img" aria-label={`Applications per day for the last ${data.length} days, ${total} in total`}>
+      <div className="dbars-plot">
+        <span className="dbars-max faint">{max}</span>
+        {[0, 1, 2, 3].map((step) => (
+          <i key={step} className="dbars-grid" style={{ top: `${100 - (BAR_HEADROOM * step) / 3}%` }} />
+        ))}
+        <div className="dbars-cols">
           {data.map((d) => (
-            <div className="trend-hit" key={d.date} style={{ '--y': `${y(d.count)}%` } as CSSProperties}>
-              <i />
-              <span className="trend-tip">
+            <div className="dbar" key={d.date}>
+              <i style={{ height: `${(d.count / max) * BAR_HEADROOM}%` }} />
+              <span className="dbar-tip">
                 <b>{d.count}</b> {d.count === 1 ? 'application' : 'applications'}
                 <small>{dayLabel(d.date)}</small>
               </span>
@@ -69,7 +55,7 @@ export function DailyTrend({ data }: { data: { date: string; count: number }[] }
           ))}
         </div>
       </div>
-      <div className="trend-axis" aria-hidden="true">
+      <div className="dbars-axis" aria-hidden="true">
         {data.map((d) => (
           <span key={d.date}>{new Date(`${d.date}T00:00:00Z`).getUTCDate()}</span>
         ))}

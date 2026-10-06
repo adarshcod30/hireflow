@@ -11,7 +11,7 @@
 
 [**Live site**](https://d2mi9lgv0n45s2.cloudfront.net) &nbsp;·&nbsp; [**API docs**](https://api.adarshdwivedi.site/docs) &nbsp;·&nbsp; [**Architecture**](docs/architecture.md) &nbsp;·&nbsp; [**Decisions**](docs/decisions.md) &nbsp;·&nbsp; [**Runbook**](docs/runbook.md) &nbsp;·&nbsp; [**Report a bug**](https://github.com/adarshcod30/hireflow/issues)
 
-<img src="docs/assets/board.png" alt="The HireFlow job board: a pastel gradient page with a search bar, filters and role cards" width="860">
+<img src="docs/assets/console-overview.png" alt="The HireFlow recruiter overview in the dark theme: key numbers, applications per day, pipeline ring, fit scores, busiest roles and recent applications" width="860">
 
 </div>
 
@@ -59,28 +59,44 @@ portfolio project with no real users, and the README says what has been measured
 
 ## Screenshots
 
-**The candidate site** (first two pictures) is captured from the deployed system. The recruiter console needs a sign
-in, so **the console pictures come from a local run of the same code and the same demo data**. Their fit scores
-are the seed's placeholders (a local run has no Bedrock), not model output. On the deployed system the same screens
-show the real scores from the table in [Screening Pipeline](#screening-pipeline). All the people are invented.
+Every picture is captured from the deployed system, signed in as the administrator, with the invented demo data. The fit
+scores and the summary in the side panel are real Amazon Bedrock Nova Lite output (see [Screening Pipeline](#screening-pipeline)).
+All the people are invented. Light and dark are one switch, so every screen exists in both.
+
+**The recruiter overview, dark and light.** Key numbers with a week-over-week change, applications per day, where every
+application sits right now, the fit-score bands, the busiest roles and the latest applications. It refreshes itself every 30 seconds.
+
+<table>
+<tr>
+<td width="50%"><img src="docs/assets/console-overview.png" alt="The recruiter overview in the dark theme"></td>
+<td width="50%"><img src="docs/assets/console-overview-light.png" alt="The recruiter overview in the light theme"></td>
+</tr>
+</table>
+
+<table>
+<tr>
+<td width="50%"><img src="docs/assets/console-board.png" alt="The pipeline board for one role, with a column per stage and a card per candidate"><br><sub><b>The pipeline board.</b> One column per stage. Drag a card to move it, or open it. Illegal moves are refused.</sub></td>
+<td width="50%"><img src="docs/assets/console-application.png" alt="An application opened in the side panel with the model's screening summary, the moves the pipeline allows and the history"><br><sub><b>One application.</b> The model's summary and the skills it found, the moves the pipeline allows, and the full history.</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/assets/console-jobs.png" alt="The jobs table with status, applicants, a stage bar and average fit"><br><sub><b>Jobs.</b> Every role, who applied, where they are, and the average fit.</sub></td>
+<td width="50%"><img src="docs/assets/console-candidates.png" alt="The candidates table with search and filters"><br><sub><b>Candidates.</b> Everyone across every role, with search and filters.</sub></td>
+</tr>
+</table>
+
+**The candidate site, light and dark.**
+
+<table>
+<tr>
+<td width="50%"><img src="docs/assets/board.png" alt="The public job board in the light theme"></td>
+<td width="50%"><img src="docs/assets/board-dark.png" alt="The public job board in the dark theme"></td>
+</tr>
+</table>
 
 <table>
 <tr>
 <td width="60%"><img src="docs/assets/job.png" alt="A role page with the apply panel"><br><sub><b>A role.</b> Pay, work mode and skills up front, and a three-step apply panel that uploads the PDF straight to S3.</sub></td>
 <td width="40%"><img src="docs/assets/board-mobile.png" alt="The job board on a phone"><br><sub><b>On a phone.</b> The same board, one column.</sub></td>
-</tr>
-</table>
-
-<img src="docs/assets/console-overview.png" alt="The recruiter overview: key numbers, applications per day, the pipeline, score distribution, busiest roles and recent applications" width="900">
-<sub><b>Overview.</b> Week-over-week numbers, a 14-day chart, where every application sits, and what needs attention.</sub>
-
-<img src="docs/assets/console-board.png" alt="The pipeline board for one role, with a column per stage and a card per candidate" width="900">
-<sub><b>Pipeline board.</b> Drag a card to move it. A column that the pipeline does not allow dims while you drag.</sub>
-
-<table>
-<tr>
-<td width="50%"><img src="docs/assets/console-application.png" alt="An application opened in the side panel, with the screening result, move actions and history"><br><sub><b>One application.</b> The screening result, the moves the pipeline allows, and the full history.</sub></td>
-<td width="50%"><img src="docs/assets/console-candidates.png" alt="The candidates table with search and filters"><br><sub><b>Candidates.</b> Everyone across every role, with search and filters.</sub></td>
 </tr>
 </table>
 
@@ -464,7 +480,7 @@ cd infra   && npm test
 |---|---|---|---|---|---|
 | `api` | 334 | 97.3% | 89.3% | 97.9% | Unit tests, and end-to-end tests over HTTP against real PostgreSQL, including concurrency, the migration up and down, and `EXPLAIN` checks that the indexes are used |
 | `lambdas` | 95 | 99.6% | 93.4% | 100% | Handlers with fakes, retry and partial-batch behaviour, the signing vector, email escaping, prompt-injection handling |
-| `web` | 138 | 97.9% | 95.8% | 98.7% | Every page and flow with a mocked network: apply and upload, filters, the board including drag and drop, the side panel, forms, accessibility of the dialogs |
+| `web` | 138 | 97.6% | 95.5% | 98.7% | Every page and flow with a mocked network: apply and upload, filters, the board including drag and drop, the side panel, forms, accessibility of the dialogs |
 | `infra` | 42 | n/a | n/a | n/a | The synthesised template: no NAT, no SSH, private database, IMDSv2, DLQs, one-model Bedrock access, OIDC trust, IAM wildcard allowlist, a signed sender domain |
 
 That is 609 tests, plus the live checks (`smoke.sh`, `e2e-live.sh`) against the deployed system. Every database test file clones a template database, so they run in parallel without sharing state.

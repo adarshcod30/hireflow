@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { DailyTrend, Histogram, PipelineDonut, Sparkline, StageBar } from '../components/charts';
+import { DailyBars, Histogram, PipelineDonut, Sparkline, StageBar } from '../components/charts';
 import { Drawer, Modal } from '../components/overlay';
 import { Avatar, Chips, EmptyState, ErrorNote, Loading, ScoreRing, StatusBadge } from '../components/ui';
 import { zeroStatuses } from './helpers';
@@ -84,7 +84,7 @@ describe('small components', () => {
 describe('charts', () => {
   it('describes the daily chart in words, since the bars carry no text', () => {
     render(
-      <DailyTrend
+      <DailyBars
         data={[
           { date: '2030-01-01', count: 2 },
           { date: '2030-01-02', count: 0 },
@@ -95,22 +95,20 @@ describe('charts', () => {
     expect(screen.getByRole('img', { name: 'Applications per day for the last 3 days, 6 in total' })).toBeInTheDocument();
   });
 
-  it('draws one hover target per day, labelled with the count and the date', () => {
-    const { container } = render(<DailyTrend data={[{ date: '2030-01-01', count: 1 }, { date: '2030-01-02', count: 4 }]} />);
-    const tips = [...container.querySelectorAll('.trend-tip')].map((t) => t.textContent);
+  it('draws one bar and hover target per day, labelled with the count and the date', () => {
+    const { container } = render(<DailyBars data={[{ date: '2030-01-01', count: 1 }, { date: '2030-01-02', count: 4 }]} />);
+    const tips = [...container.querySelectorAll('.dbar-tip')].map((t) => t.textContent);
     expect(tips).toEqual(['1 applicationJan 1', '4 applicationsJan 2']);
-    expect(container.querySelectorAll('.trend-line')).toHaveLength(1);
   });
 
-  it('puts the busiest day at the top of the plot, and survives an all-zero or empty series', () => {
-    const { container, rerender } = render(<DailyTrend data={[{ date: '2030-01-01', count: 1 }, { date: '2030-01-02', count: 4 }]} />);
-    const heights = [...container.querySelectorAll<HTMLElement>('.trend-hit')].map((h) => h.style.getPropertyValue('--y'));
-    expect(heights).toEqual(['72.5%', '14%']);
-    rerender(<DailyTrend data={[{ date: '2030-01-01', count: 0 }]} />);
-    expect(container.querySelector<HTMLElement>('.trend-hit')!.style.getPropertyValue('--y')).toBe('92%');
-    rerender(<DailyTrend data={[]} />);
-    expect(container.querySelectorAll('.trend-hit')).toHaveLength(0);
-    expect(container.querySelector('.trend-line')).toBeNull();
+  it('scales bars against the busiest day, and survives an all-zero or empty series', () => {
+    const { container, rerender } = render(<DailyBars data={[{ date: '2030-01-01', count: 1 }, { date: '2030-01-02', count: 4 }]} />);
+    const heights = [...container.querySelectorAll<HTMLElement>('.dbar > i')].map((i) => i.style.height);
+    expect(heights).toEqual(['23%', '92%']);
+    rerender(<DailyBars data={[{ date: '2030-01-01', count: 0 }]} />);
+    expect(container.querySelector<HTMLElement>('.dbar > i')!.style.height).toBe('0%');
+    rerender(<DailyBars data={[]} />);
+    expect(container.querySelectorAll('.dbar')).toHaveLength(0);
   });
 
   it('lists every score band in the histogram description', () => {

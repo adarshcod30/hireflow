@@ -8,7 +8,8 @@
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "test": "jest",
     "test:ci": "jest --coverage --ci",
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "screen:local": "node scripts/screen-local.mjs"
   },
   "engines": {
     "node": ">=22"

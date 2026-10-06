@@ -30,7 +30,8 @@ env:
 jobs:
   deploy:
     name: Deploy API and web app
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    # Skipped until the stack exists and the AWS_ROLE_ARN repository variable is set
+    if: vars.AWS_ROLE_ARN != '' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

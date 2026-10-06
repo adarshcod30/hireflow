@@ -8,6 +8,8 @@ import { Construct } from 'constructs';
 export interface CiAccessProps {
   /** owner/name. Only workflows on the main branch of this repository can assume the role. */
   githubRepo: string;
+  /** The repository's name inside OIDC tokens, for example `repo:owner@1/name@2`. Empty means `repo:owner/name`. */
+  githubSubject?: string;
   instance: ec2.IInstance;
   artifacts: s3.IBucket;
   webBucket: s3.IBucket;
@@ -40,7 +42,7 @@ export class CiAccess extends Construct {
       maxSessionDuration: Duration.hours(1),
       assumedBy: new iam.WebIdentityPrincipal(provider.oidcProviderArn, {
         StringEquals: { [`${ISSUER}:aud`]: 'sts.amazonaws.com' },
-        StringLike: { [`${ISSUER}:sub`]: `repo:${props.githubRepo}:ref:refs/heads/main` },
+        StringLike: { [`${ISSUER}:sub`]: `${props.githubSubject || `repo:${props.githubRepo}`}:ref:refs/heads/main` },
       }),
     });
 

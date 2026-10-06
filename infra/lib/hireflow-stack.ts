@@ -105,6 +105,7 @@ export class HireflowStack extends Stack {
 
     const ci = new CiAccess(this, 'CiAccess', {
       githubRepo: config.githubRepo,
+      githubSubject: config.githubSubject,
       instance: host.instance,
       artifacts: storage.artifacts,
       webBucket: website.bucket,

@@ -10,6 +10,14 @@ export interface HireflowConfig {
   alertEmail: string;
   /** owner/name of the GitHub repository allowed to deploy through OIDC. */
   githubRepo: string;
+  /**
+   * How GitHub names this repository inside its OIDC tokens. Repositories created from 2026 on use an
+   * immutable form with numeric ids, such as `repo:owner@123/name@456`, which survives a rename.
+   * Older repositories use `repo:owner/name`. To find yours:
+   *   gh api repos/OWNER/REPO/actions/oidc/customization/sub --jq .sub_claim_prefix
+   * Leave it empty to use the classic form built from githubRepo.
+   */
+  githubSubject: string;
   /** Alarm threshold for gross monthly spend, before credits. */
   monthlyBudgetUsd: number;
   /** Bedrock inference profile used for resume screening. */
@@ -21,6 +29,7 @@ export const DEFAULT_CONFIG: HireflowConfig = {
   senderEmail: 'adarshdwivedi256@gmail.com',
   alertEmail: 'adarshdeveloper24@gmail.com',
   githubRepo: 'adarshcod30/hireflow',
+  githubSubject: 'repo:adarshcod30@201125240/hireflow@1406556665',
   monthlyBudgetUsd: 40,
   bedrockModelId: 'apac.amazon.nova-lite-v1:0',
 };
@@ -37,6 +46,7 @@ export function readConfig(node: Node): HireflowConfig {
     senderEmail: pick('senderEmail'),
     alertEmail: pick('alertEmail'),
     githubRepo: pick('githubRepo'),
+    githubSubject: pick('githubSubject'),
     monthlyBudgetUsd: pick('monthlyBudgetUsd'),
     bedrockModelId: pick('bedrockModelId'),
   };

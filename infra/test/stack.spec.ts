@@ -291,10 +291,34 @@ describe('continuous deployment access', () => {
     expect(roles).toHaveLength(1);
     const condition = roles[0].Properties.AssumeRolePolicyDocument.Statement[0].Condition;
     expect(condition.StringEquals['token.actions.githubusercontent.com:aud']).toBe('sts.amazonaws.com');
+    // The immutable form GitHub gives new repositories: owner and repository ids, not just names
+    expect(condition.StringLike['token.actions.githubusercontent.com:sub']).toBe(
+      'repo:adarshcod30@201125240/hireflow@1406556665:ref:refs/heads/main',
+    );
+    expect(roles[0].Properties.MaxSessionDuration).toBe(3600);
+  });
+
+  it('falls back to the classic owner/name subject when no immutable one is configured', () => {
+    const role = Object.values(synth({ githubSubject: '' }).findResources('AWS::IAM::Role')).find(
+      (r) => r.Properties.RoleName === 'hireflow-github-deploy',
+    )!;
+    const condition = role.Properties.AssumeRolePolicyDocument.Statement[0].Condition;
     expect(condition.StringLike['token.actions.githubusercontent.com:sub']).toBe(
       'repo:adarshcod30/hireflow:ref:refs/heads/main',
     );
-    expect(roles[0].Properties.MaxSessionDuration).toBe(3600);
+  });
+
+  it('never trusts a wildcard subject, so no other repository or branch can deploy', () => {
+    for (const subject of ['', 'repo:someone@1/else@2']) {
+      const role = Object.values(synth({ githubSubject: subject }).findResources('AWS::IAM::Role')).find(
+        (r) => r.Properties.RoleName === 'hireflow-github-deploy',
+      )!;
+      const sub = role.Properties.AssumeRolePolicyDocument.Statement[0].Condition.StringLike[
+        'token.actions.githubusercontent.com:sub'
+      ] as string;
+      expect(sub).not.toContain('*');
+      expect(sub.endsWith(':ref:refs/heads/main')).toBe(true);
+    }
   });
 
   it('can ship a release and a web build but cannot touch infrastructure or secrets', () => {

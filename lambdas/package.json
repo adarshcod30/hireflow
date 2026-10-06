@@ -7,7 +7,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "test": "jest",
-    "test:ci": "jest --coverage --ci"
+    "test:ci": "jest --coverage --ci",
+    "build": "node scripts/build.mjs"
   },
   "engines": {
     "node": ">=22"

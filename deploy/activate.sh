@@ -38,17 +38,20 @@ secret() { aws secretsmanager get-secret-value --secret-id "$(param "/hireflow/s
 write_env() {
   local tmp
   tmp="$(mktemp)"
-  # Plain settings: every /hireflow/env/NAME parameter becomes NAME=value
-  aws ssm get-parameters-by-path --path /hireflow/env --query 'Parameters[].[Name,Value]' --output text |
-    awk -F'\t' '{ n = split($1, part, "/"); print part[n] "=" $2 }' >"$tmp"
-  # The database URL is assembled here so the password is URL-encoded and never stored whole
-  DB_JSON="$(secret db)" node -e '
-    const s = JSON.parse(process.env.DB_JSON);
-    const e = encodeURIComponent;
-    console.log(`DATABASE_URL=postgres://${e(s.username)}:${e(s.password)}@${s.host}:${s.port}/${s.dbname}`);
-  ' >>"$tmp"
-  echo "JWT_SECRET=$(secret jwt)" >>"$tmp"
-  echo "INTERNAL_HMAC_SECRET=$(secret internal-hmac)" >>"$tmp"
+  {
+    # Plain settings: every /hireflow/env/NAME parameter becomes NAME=value
+    aws ssm get-parameters-by-path --path /hireflow/env --query 'Parameters[].[Name,Value]' --output text |
+      awk -F'\t' '{ n = split($1, part, "/"); print part[n] "=" $2 }'
+    # The database URL is assembled here so the password is URL-encoded and never stored whole
+    # shellcheck disable=SC2016
+    DB_JSON="$(secret db)" node -e '
+      const s = JSON.parse(process.env.DB_JSON);
+      const e = encodeURIComponent;
+      console.log(`DATABASE_URL=postgres://${e(s.username)}:${e(s.password)}@${s.host}:${s.port}/${s.dbname}`);
+    '
+    echo "JWT_SECRET=$(secret jwt)"
+    echo "INTERNAL_HMAC_SECRET=$(secret internal-hmac)"
+  } >"$tmp"
   install -o root -g hireflow -m 0640 "$tmp" "$ENV_FILE"
   rm -f "$tmp"
 }
@@ -112,7 +115,8 @@ fi
 
 # Keep the five newest releases, and never the one in use
 CURRENT="$(readlink -f "$BASE/current")"
-ls -1dt "$BASE"/releases/* | tail -n +6 | while read -r old; do
-  [[ "$(readlink -f "$old")" == "$CURRENT" ]] || rm -rf "$old"
-done
+find "$BASE/releases" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -rn | tail -n +6 | cut -d' ' -f2- |
+  while read -r old; do
+    [[ "$(readlink -f "$old")" == "$CURRENT" ]] || rm -rf "$old"
+  done
 echo "=== done"

@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Sourced by the other scripts. Fills in settings from the CloudFormation outputs unless they are already set,
 # which is how CI passes them in as repository variables.
 export AWS_REGION="${AWS_REGION:-ap-south-1}"
@@ -12,8 +13,9 @@ stack_output() {
 need() {
   local name="$1" key="$2"
   if [[ -z "${!name:-}" ]]; then
-    printf -v "$name" '%s' "$(stack_output "$key")"
-    export "$name"
+    local value
+    value="$(stack_output "$key")"
+    export "$name=$value" # works on the bash 3.2 that macOS ships, unlike declare -gx
   fi
   [[ -n "${!name}" && "${!name}" != "None" ]] || { echo "could not work out $name (stack output $key)" >&2; exit 1; }
 }

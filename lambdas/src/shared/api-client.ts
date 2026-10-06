@@ -1,3 +1,4 @@
+import type { SecretReader } from './secret';
 import { SIGNATURE_HEADER, sign, TIMESTAMP_HEADER } from './sign';
 
 export class ApiError extends Error {
@@ -23,7 +24,7 @@ type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
 export class ApiClient implements InternalApi {
   constructor(
     private readonly baseUrl: string,
-    private readonly getSecret: () => Promise<string>,
+    private readonly getSecret: SecretReader,
     private readonly fetchImpl: FetchLike = fetch,
     private readonly now: () => number = () => Date.now(),
     private readonly timeoutMs = 8000,
@@ -41,9 +42,13 @@ export class ApiClient implements InternalApi {
     await this.request('DELETE', path);
   }
 
-  private async request<T>(method: string, path: string, body = ''): Promise<T> {
+  /**
+   * A 401 can mean the shared secret was rotated while this container was warm. Read the secret
+   * again and try once more. Only one retry: a second 401 is a real rejection, not a stale cache.
+   */
+  private async request<T>(method: string, path: string, body = '', refreshed = false): Promise<T> {
     const timestamp = String(Math.floor(this.now() / 1000));
-    const secret = await this.getSecret();
+    const secret = await this.getSecret(refreshed);
     const headers: Record<string, string> = {
       [TIMESTAMP_HEADER]: timestamp,
       [SIGNATURE_HEADER]: sign(secret, timestamp, method, path, body),
@@ -56,6 +61,7 @@ export class ApiClient implements InternalApi {
       body: body || undefined,
       signal: AbortSignal.timeout(this.timeoutMs),
     });
+    if (res.status === 401 && !refreshed) return this.request<T>(method, path, body, true);
     if (!res.ok) throw new ApiError(res.status, `${method} ${path} answered ${res.status}`);
     if (res.status === 204) return undefined as T;
     return (await res.json()) as T;

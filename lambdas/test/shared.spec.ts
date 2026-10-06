@@ -52,6 +52,38 @@ describe('ApiClient', () => {
     await expect(client(fetchImpl).get('/v1/internal/missing')).rejects.toBeInstanceOf(ApiError);
   });
 
+  it('reads the secret again after a 401 and retries once, so a rotated key heals itself', async () => {
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce(respond(401))
+      .mockResolvedValueOnce(respond(200, { ok: true }));
+    const getSecret = jest.fn().mockResolvedValueOnce('old-secret').mockResolvedValueOnce('new-secret');
+    const api = new ApiClient('https://api.example.com', getSecret, fetchImpl, now);
+
+    expect(await api.get('/v1/internal/x')).toEqual({ ok: true });
+
+    expect(getSecret.mock.calls).toEqual([[false], [true]]);
+    const signatures = (fetchImpl.mock.calls as [string, { headers: Record<string, string> }][]).map(
+      ([, init]) => init.headers['x-hireflow-signature'],
+    );
+    expect(signatures).toEqual([
+      sign('old-secret', '1790000000', 'GET', '/v1/internal/x', ''),
+      sign('new-secret', '1790000000', 'GET', '/v1/internal/x', ''),
+    ]);
+  });
+
+  it('gives up after one retry when the 401 is genuine', async () => {
+    const fetchImpl = jest.fn().mockResolvedValue(respond(401));
+    await expect(client(fetchImpl).post('/v1/internal/x', {})).rejects.toMatchObject({ status: 401 });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry other failures', async () => {
+    const fetchImpl = jest.fn().mockResolvedValue(respond(500));
+    await expect(client(fetchImpl).get('/x')).rejects.toMatchObject({ status: 500 });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
   it('passes a timeout signal, so a hung API cannot hold a Lambda until it is killed', async () => {
     const fetchImpl = jest.fn().mockResolvedValue(respond(200, {}));
     await client(fetchImpl).get('/x');
@@ -69,6 +101,15 @@ describe('cachedSecret', () => {
     expect(await read()).toBe('s3cret');
     expect(send).toHaveBeenCalledTimes(1);
     expect((send.mock.calls[0][0] as GetSecretValueCommand).input.SecretId).toBe('arn:secret');
+  });
+
+  it('reads again when asked to refresh, and keeps the new value', async () => {
+    const send = jest.fn().mockResolvedValueOnce({ SecretString: 'old' }).mockResolvedValue({ SecretString: 'new' });
+    const read = cachedSecret(fakeClient(send), 'arn:secret');
+    expect(await read()).toBe('old');
+    expect(await read(true)).toBe('new');
+    expect(await read()).toBe('new');
+    expect(send).toHaveBeenCalledTimes(2);
   });
 
   it('does not remember a failure, so the next invocation tries again', async () => {
